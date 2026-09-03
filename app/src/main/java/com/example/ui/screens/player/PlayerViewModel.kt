@@ -17,6 +17,12 @@ data class PlayerUiState(
 
     // Website (Provider)
     val availableWebsites: List<String> = listOf(
+        "tv10.egydead.live",
+        "a.qfilm.tv",
+        "egydead.rip",
+        "mycima.red",
+        "witanime.you",
+        "animesit.com",
         "VidSrc",
         "SuperStream",
         "FlixHQ",
@@ -36,7 +42,7 @@ data class PlayerUiState(
         "StarDima",
         "WatchStarDima"
     ),
-    val currentWebsite: String = "VidSrc",
+    val currentWebsite: String = "tv10.egydead.live",
 
     // Server
     val availableServers: List<String> = emptyList(),
@@ -68,9 +74,8 @@ class PlayerViewModel : ViewModel() {
         val isAnime = initialTitle.contains("anime", ignoreCase = true) || initialTitle.contains("أنمي", ignoreCase = true)
 
         val bestWebsite = when {
-            hasArabic -> "EgyDead"
-            isAnime -> "Anime4Up"
-            else -> "VidSrc"
+            isAnime -> "witanime.you"
+            else -> "tv10.egydead.live"
         }
 
         _uiState.value = _uiState.value.copy(
@@ -161,6 +166,12 @@ class PlayerViewModel : ViewModel() {
 
         val url = if (state.isMovie) {
             when (state.currentWebsite) {
+                "tv10.egydead.live" -> "https://tv10.egydead.live/?s=$encodedTitle"
+                "a.qfilm.tv" -> "https://a.qfilm.tv/?s=$encodedTitle"
+                "egydead.rip" -> "https://egydead.rip/?s=$encodedTitle"
+                "mycima.red" -> "https://mycima.red/search/$encodedTitle"
+                "witanime.you" -> "https://witanime.you/?search_param=animes&s=$encodedTitle"
+                "animesit.com" -> "https://animesit.com/?s=$encodedTitle"
                 "VidSrc" -> "https://vidsrc.me/embed/movie?tmdb=${state.mediaId}"
                 "SuperStream" -> "https://multiembed.mov/?video_id=${state.mediaId}&tmdb=1"
                 "FlixHQ" -> "https://vidsrc.to/embed/movie/${state.mediaId}"
@@ -183,6 +194,12 @@ class PlayerViewModel : ViewModel() {
             }
         } else {
             when (state.currentWebsite) {
+                "tv10.egydead.live" -> "https://tv10.egydead.live/?s=$encodedTitle"
+                "a.qfilm.tv" -> "https://a.qfilm.tv/?s=$encodedTitle"
+                "egydead.rip" -> "https://egydead.rip/?s=$encodedTitle"
+                "mycima.red" -> "https://mycima.red/search/$encodedTitle"
+                "witanime.you" -> "https://witanime.you/?search_param=animes&s=$encodedTitle"
+                "animesit.com" -> "https://animesit.com/?s=$encodedTitle"
                 "VidSrc" -> "https://vidsrc.me/embed/tv?tmdb=${state.mediaId}&season=${state.currentSeasonNumber}&episode=${state.currentEpisodeNumber}"
                 "SuperStream" -> "https://multiembed.mov/?video_id=${state.mediaId}&tmdb=1&s=${state.currentSeasonNumber}&e=${state.currentEpisodeNumber}"
                 "FlixHQ" -> "https://vidsrc.to/embed/tv/${state.mediaId}/${state.currentSeasonNumber}/${state.currentEpisodeNumber}"

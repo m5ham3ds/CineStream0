@@ -126,12 +126,18 @@ fun PlayerScreen(mediaId: String, isMovie: Boolean, title: String, url: String? 
         trackSelector.setParameters(parametersBuilder)
     }
 
+    var showInitialSelection by remember { mutableStateOf(true) }
+
     LaunchedEffect(uiState.currentVideoUrl) {
         uiState.currentVideoUrl?.let { url ->
             val mediaItem = MediaItem.fromUri(url)
             exoPlayer.setMediaItem(mediaItem)
             exoPlayer.prepare()
-            exoPlayer.playWhenReady = true
+            if (!showInitialSelection) {
+                exoPlayer.playWhenReady = true
+            } else {
+                exoPlayer.playWhenReady = false
+            }
         }
     }
 
@@ -208,7 +214,7 @@ fun PlayerScreen(mediaId: String, isMovie: Boolean, title: String, url: String? 
             }
         }
         
-        if (uiState.isLoading) {
+        if (uiState.isLoading && !showInitialSelection) {
             Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.5f)), contentAlignment = Alignment.Center) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     CircularProgressIndicator(color = Color(0xFFE50914))
@@ -330,44 +336,56 @@ fun PlayerScreen(mediaId: String, isMovie: Boolean, title: String, url: String? 
                     }
 
                     // Center Playback Controls
-                    Row(
-                        modifier = Modifier.align(Alignment.Center),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(32.dp)
-                    ) {
-                        Box(
-                            contentAlignment = Alignment.Center,
-                            modifier = Modifier
-                                .size(56.dp)
-                                .border(1.dp, Color.White.copy(alpha = 0.2f), CircleShape)
-                                .clickable { exoPlayer.seekTo((exoPlayer.currentPosition - 10000).coerceAtLeast(0)) }
+                    if (uiState.currentVideoUrl == null) {
+                        Column(
+                            modifier = Modifier.align(Alignment.Center),
+                            horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            Icon(Icons.Default.Replay10, contentDescription = "Rewind", tint = Color.White, modifier = Modifier.size(28.dp))
+                            CircularProgressIndicator(color = Color(0xFFE50914))
+                            Spacer(modifier = Modifier.height(16.dp))
+                            val serverText = if (uiState.currentServer.isNotEmpty()) " / ${uiState.currentServer}" else ""
+                            Text("Loading ${uiState.currentWebsite}$serverText...", color = Color.White, fontWeight = FontWeight.Bold)
                         }
-                        
-                        Box(
-                            contentAlignment = Alignment.Center,
-                            modifier = Modifier
-                                .size(72.dp)
-                                .border(2.dp, Color(0xFFE50914), CircleShape)
-                                .clickable { if (isPlaying) exoPlayer.pause() else exoPlayer.play() }
+                    } else {
+                        Row(
+                            modifier = Modifier.align(Alignment.Center),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(32.dp)
                         ) {
-                            Icon(
-                                if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
-                                contentDescription = "Play/Pause",
-                                tint = Color.White,
-                                modifier = Modifier.size(36.dp)
-                            )
-                        }
-                        
-                        Box(
-                            contentAlignment = Alignment.Center,
-                            modifier = Modifier
-                                .size(56.dp)
-                                .border(1.dp, Color.White.copy(alpha = 0.2f), CircleShape)
-                                .clickable { exoPlayer.seekTo((exoPlayer.currentPosition + 10000).coerceAtMost(exoPlayer.duration)) }
-                        ) {
-                            Icon(Icons.Default.Forward10, contentDescription = "Forward", tint = Color.White, modifier = Modifier.size(28.dp))
+                            Box(
+                                contentAlignment = Alignment.Center,
+                                modifier = Modifier
+                                    .size(56.dp)
+                                    .border(1.dp, Color.White.copy(alpha = 0.2f), CircleShape)
+                                    .clickable { exoPlayer.seekTo((exoPlayer.currentPosition - 10000).coerceAtLeast(0)) }
+                            ) {
+                                Icon(Icons.Default.Replay10, contentDescription = "Rewind", tint = Color.White, modifier = Modifier.size(28.dp))
+                            }
+                            
+                            Box(
+                                contentAlignment = Alignment.Center,
+                                modifier = Modifier
+                                    .size(72.dp)
+                                    .border(2.dp, Color(0xFFE50914), CircleShape)
+                                    .clickable { if (isPlaying) exoPlayer.pause() else exoPlayer.play() }
+                            ) {
+                                Icon(
+                                    if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+                                    contentDescription = "Play/Pause",
+                                    tint = Color.White,
+                                    modifier = Modifier.size(36.dp)
+                                )
+                            }
+                            
+                            Box(
+                                contentAlignment = Alignment.Center,
+                                modifier = Modifier
+                                    .size(56.dp)
+                                    .border(1.dp, Color.White.copy(alpha = 0.2f), CircleShape)
+                                    .clickable { exoPlayer.seekTo((exoPlayer.currentPosition + 10000).coerceAtMost(exoPlayer.duration)) }
+                            ) {
+                                Icon(Icons.Default.Forward10, contentDescription = "Forward", tint = Color.White, modifier = Modifier.size(28.dp))
+                            }
                         }
                     }
 
@@ -548,6 +566,68 @@ fun PlayerScreen(mediaId: String, isMovie: Boolean, title: String, url: String? 
                 showDownloadSheet = false
             }
         )
+    }
+
+    if (showInitialSelection) {
+        androidx.compose.ui.window.Dialog(onDismissRequest = { 
+            // Do not dismiss on outside click to force selection or back press
+            onBack()
+        }, properties = androidx.compose.ui.window.DialogProperties(dismissOnBackPress = true, dismissOnClickOutside = false)) {
+            androidx.compose.material3.Card(
+                modifier = Modifier.fillMaxWidth().padding(16.dp),
+                colors = androidx.compose.material3.CardDefaults.cardColors(containerColor = Color(0xFF1C1C1E)),
+                shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp)
+            ) {
+                Column(modifier = Modifier.padding(24.dp).fillMaxWidth()) {
+                    if (uiState.currentVideoUrl == null || uiState.isLoading) {
+                        CircularProgressIndicator(color = Color(0xFFE50914), modifier = Modifier.align(Alignment.CenterHorizontally))
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text("Searching for video...", color = Color.White, fontWeight = FontWeight.Bold, modifier = Modifier.align(Alignment.CenterHorizontally))
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text("Current Site: ${uiState.currentWebsite}", color = Color.Gray, fontSize = 14.sp, modifier = Modifier.align(Alignment.CenterHorizontally))
+                    } else {
+                        Text("Ready to Play", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                        Spacer(modifier = Modifier.height(16.dp))
+                        
+                        Text("Source:", color = Color.Gray, fontSize = 14.sp)
+                        Text(uiState.currentWebsite, color = Color(0xFFE50914), fontWeight = FontWeight.SemiBold)
+                        
+                        Spacer(modifier = Modifier.height(16.dp))
+                        
+                        Text("Quality:", color = Color.Gray, fontSize = 14.sp)
+                        androidx.compose.foundation.lazy.LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            items(listOf("Auto", "1080p", "720p", "480p")) { q ->
+                                androidx.compose.material3.FilterChip(
+                                    selected = (currentQuality == q),
+                                    onClick = { currentQuality = q },
+                                    label = { Text(q) },
+                                    colors = androidx.compose.material3.FilterChipDefaults.filterChipColors(
+                                        selectedContainerColor = Color(0xFFE50914),
+                                        selectedLabelColor = Color.White
+                                    )
+                                )
+                            }
+                        }
+                        
+                        Spacer(modifier = Modifier.height(24.dp))
+                        
+                        Button(
+                            onClick = { 
+                                showInitialSelection = false
+                                exoPlayer.playWhenReady = true
+                                exoPlayer.play()
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = androidx.compose.material3.ButtonDefaults.buttonColors(containerColor = Color(0xFFE50914))
+                        ) {
+                            Icon(Icons.Default.PlayArrow, contentDescription = null)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Play Now")
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 
