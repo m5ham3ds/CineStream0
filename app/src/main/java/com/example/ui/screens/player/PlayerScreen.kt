@@ -41,6 +41,7 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
 import androidx.media3.ui.PlayerView
 import kotlinx.coroutines.delay
 import com.example.ui.components.DownloadQualitySheet
@@ -65,7 +66,7 @@ fun PlayerScreen(mediaId: String, isMovie: Boolean, title: String, url: String? 
     var volume by remember { mutableStateOf(0.5f) }
     var isLocked by remember { mutableStateOf(false) }
     var currentSpeed by remember { mutableStateOf(1f) }
-    var currentQuality by remember { mutableStateOf("1080p") }
+    var currentQuality by remember { mutableStateOf("Auto") }
     var showQualitySheet by remember { mutableStateOf(false) }
     var showEpisodesSheet by remember { mutableStateOf(false) }
     
@@ -92,8 +93,12 @@ fun PlayerScreen(mediaId: String, isMovie: Boolean, title: String, url: String? 
         }
     }
 
+    val trackSelector = remember { DefaultTrackSelector(context) }
+
     val exoPlayer = remember {
-        ExoPlayer.Builder(context).build().apply {
+        ExoPlayer.Builder(context)
+            .setTrackSelector(trackSelector)
+            .build().apply {
             addListener(object : Player.Listener {
                 override fun onIsPlayingChanged(isPlayingChanged: Boolean) {
                     isPlaying = isPlayingChanged
@@ -107,6 +112,20 @@ fun PlayerScreen(mediaId: String, isMovie: Boolean, title: String, url: String? 
         }
     }
     
+    LaunchedEffect(currentQuality) {
+        val parametersBuilder = trackSelector.buildUponParameters()
+        when (currentQuality) {
+            "360p" -> parametersBuilder.setMaxVideoSize(Int.MAX_VALUE, 360)
+            "480p" -> parametersBuilder.setMaxVideoSize(Int.MAX_VALUE, 480)
+            "720p" -> parametersBuilder.setMaxVideoSize(Int.MAX_VALUE, 720)
+            "1080p" -> parametersBuilder.setMaxVideoSize(Int.MAX_VALUE, 1080)
+            "4K" -> parametersBuilder.setMaxVideoSize(Int.MAX_VALUE, 2160)
+            "Auto" -> parametersBuilder.clearVideoSizeConstraints()
+            else -> parametersBuilder.clearVideoSizeConstraints()
+        }
+        trackSelector.setParameters(parametersBuilder)
+    }
+
     LaunchedEffect(uiState.currentVideoUrl) {
         uiState.currentVideoUrl?.let { url ->
             val mediaItem = MediaItem.fromUri(url)
@@ -170,19 +189,23 @@ fun PlayerScreen(mediaId: String, isMovie: Boolean, title: String, url: String? 
             modifier = Modifier.fillMaxSize()
         )
         
-        uiState.extractionUrl?.let { url ->
-            HiddenVideoExtractor(
-                url = url,
-                isMovie = uiState.isMovie,
-                season = uiState.currentSeasonNumber,
-                episode = uiState.currentEpisodeNumber,
-                onVideoUrlFound = { extractedUrl ->
-                    viewModel.setExtractedUrl(extractedUrl)
-                },
-                onServersFound = { servers ->
-                    viewModel.updateServers(servers)
-                }
-            )
+        // Only load the webview when we don't have a video URL to save data and prevent double-loading
+        if (uiState.currentVideoUrl == null) {
+            uiState.extractionUrl?.let { url ->
+                HiddenVideoExtractor(
+                    url = url,
+                    isMovie = uiState.isMovie,
+                    season = uiState.currentSeasonNumber,
+                    episode = uiState.currentEpisodeNumber,
+                    targetServer = uiState.currentServer,
+                    onVideoUrlFound = { extractedUrl ->
+                        viewModel.setExtractedUrl(extractedUrl)
+                    },
+                    onServersFound = { servers ->
+                        viewModel.updateServers(servers)
+                    }
+                )
+            }
         }
         
         if (uiState.isLoading) {
@@ -250,7 +273,8 @@ fun PlayerScreen(mediaId: String, isMovie: Boolean, title: String, url: String? 
                                 verticalAlignment = Alignment.CenterVertically,
                                 modifier = Modifier.clickable { showServerSheet = true }.padding(8.dp)
                             ) {
-                                Text(uiState.currentServer.uppercase(), color = Color.Gray, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                                val serverName = if (uiState.currentServer.isNotEmpty()) uiState.currentServer.uppercase() else "SERVER"
+                                Text(serverName, color = Color.Gray, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
                                 Spacer(modifier = Modifier.width(4.dp))
                                 Icon(Icons.Default.KeyboardArrowDown, contentDescription = null, tint = Color(0xFFE50914), modifier = Modifier.size(16.dp))
                             }
@@ -416,7 +440,7 @@ fun PlayerScreen(mediaId: String, isMovie: Boolean, title: String, url: String? 
             Column(modifier = Modifier.padding(16.dp)) {
                 Text("Select Quality", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
                 Spacer(modifier = Modifier.height(16.dp))
-                val qualities = listOf("4K", "1080p", "720p", "480p", "360p")
+                val qualities = listOf("Auto", "4K", "1080p", "720p", "480p", "360p")
                 qualities.forEach { q ->
                     TextButton(
                         onClick = { 

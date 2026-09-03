@@ -23,6 +23,7 @@ fun HiddenVideoExtractor(
     isMovie: Boolean = true,
     season: Int = 1,
     episode: Int = 1,
+    targetServer: String? = null,
     onVideoUrlFound: (String) -> Unit,
     onServersFound: ((List<String>) -> Unit)? = null
 ) {
@@ -60,6 +61,13 @@ fun HiddenVideoExtractor(
                 }, "AndroidBridge")
 
                 webViewClient = object : WebViewClient() {
+                    var found = false
+
+                    override fun onPageStarted(view: WebView?, url: String?, favicon: android.graphics.Bitmap?) {
+                        found = false
+                        super.onPageStarted(view, url, favicon)
+                    }
+
                     override fun shouldInterceptRequest(
                         view: WebView?,
                         request: WebResourceRequest?
@@ -67,9 +75,10 @@ fun HiddenVideoExtractor(
                         val reqUrl = request?.url.toString()
                         
                         // Look for standard streaming formats
-                        if (reqUrl.contains(".m3u8") || reqUrl.contains(".mp4")) {
+                        if (!found && (reqUrl.contains(".m3u8") || reqUrl.contains(".mp4"))) {
                             // Avoid common ad scripts that might have these strings
-                            if (!reqUrl.contains("adsystem") && !reqUrl.contains("tracker")) {
+                            if (!reqUrl.contains("adsystem") && !reqUrl.contains("tracker") && !reqUrl.contains("googleads")) {
+                                found = true
                                 Handler(Looper.getMainLooper()).post {
                                     onVideoUrlFound(reqUrl)
                                 }
@@ -86,6 +95,7 @@ fun HiddenVideoExtractor(
                             (function() {
                                 var isMovie = ${isMovie};
                                 var epNum = ${episode};
+                                var targetServer = "${targetServer ?: ""}";
                                 var loc = window.location.href.toLowerCase();
                                 
                                 // 1. Auto-Click Search Results
@@ -135,9 +145,22 @@ fun HiddenVideoExtractor(
                                     if(watchBtn && !loc.includes('watch')) watchBtn.click();
                                     
                                     // Some sites use servers list to load iframe
-                                    var serverList = document.querySelectorAll('ul.servers li, .server-list li, .serversList li, .watch-servers li, .list-servers li');
-                                    var serverBtn = document.querySelector('ul.servers li, .server-list li');
-                                    if(serverBtn && document.getElementsByTagName('iframe').length === 0) serverBtn.click();
+                                    var serverList = document.querySelectorAll('ul.servers li, .server-list li, .serversList li, .watch-servers li, .list-servers li, .servers-list li');
+                                    var clickedTarget = false;
+                                    if (serverList && serverList.length > 0) {
+                                        if (targetServer !== "") {
+                                            for(var i=0; i<serverList.length; i++) {
+                                                if(serverList[i].innerText.trim() === targetServer) {
+                                                    serverList[i].click();
+                                                    clickedTarget = true;
+                                                    break;
+                                                }
+                                            }
+                                        }
+                                        if (!clickedTarget && document.getElementsByTagName('iframe').length === 0) {
+                                            serverList[0].click();
+                                        }
+                                    }
                                     
                                     // Send servers back to Kotlin
                                     if (serverList && serverList.length > 0 && typeof AndroidBridge !== 'undefined') {
@@ -158,7 +181,11 @@ fun HiddenVideoExtractor(
         },
         update = { webView ->
             if (webView.url != url) {
+                webView.tag = targetServer
                 webView.loadUrl(url)
+            } else if (webView.tag != targetServer) {
+                webView.tag = targetServer
+                webView.reload()
             }
         }
     )
