@@ -180,12 +180,17 @@ fun HiddenVideoExtractor(
             }
         },
         update = { webView ->
-            if (webView.url != url) {
-                webView.tag = targetServer
+            // Use getTag to store the original loaded url to avoid reloading when webView.url changes due to internal navigation
+            val lastUrl = webView.getTag(android.R.id.text1) as? String
+            val lastServer = webView.getTag(android.R.id.text2) as? String
+
+            if (lastUrl != url) {
+                webView.setTag(android.R.id.text1, url)
+                webView.setTag(android.R.id.text2, targetServer)
                 webView.loadUrl(url)
-            } else if (webView.tag != targetServer) {
-                webView.tag = targetServer
-                webView.reload()
+            } else if (lastServer != targetServer) {
+                webView.setTag(android.R.id.text2, targetServer)
+                webView.reload() // Server changed, reload the page
             }
         }
     )

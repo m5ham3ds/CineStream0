@@ -134,7 +134,17 @@ fun AppNavigation() {
     }
     
     
-    val extensionUrls = remember { listOf("https://google.com", "https://bing.com") }
+    val extensionUrls = remember { 
+        listOf(
+            "https://tv10.egydead.live/", "https://vidsrc.me/", "https://multiembed.mov/", "https://vidsrc.to/",
+            "https://egydead.icu/", "https://faselhd.club/", "https://anime4up.com/",
+            "https://witanime.com/", "https://cimaleek.com/", "https://asia2tv.cc/",
+            "https://tuktukcinema.net/", "https://arabseed-tv.com/", "https://www.arabseed.wine/",
+            "https://e.cimalight.co/", "https://egybests.live/", "https://www.stardima.com/",
+            "https://a.qfilm.tv/", "https://egydead.rip/", "https://mycima.red/", 
+            "https://witanime.you/", "https://animesit.com/"
+        )
+    }
     val bottomBarRoutes = listOf(
         Screen.Home.route,
         Screen.Movies.route,

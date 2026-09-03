@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
@@ -46,41 +45,14 @@ fun SplashScreen(
         label = "alphaAnim"
     )
     
-    var verificationText by remember { mutableStateOf("Initializing...") }
-    var verificationComplete by remember { mutableStateOf(false) }
-    
-    val sitesToVerify = remember {
-        listOf(
-            "https://tv10.egydead.live/", "https://vidsrc.me/", "https://multiembed.mov/", "https://vidsrc.to/",
-            "https://egydead.icu/", "https://faselhd.club/", "https://anime4up.com/",
-            "https://witanime.com/", "https://cimaleek.com/", "https://asia2tv.cc/",
-            "https://tuktukcinema.net/", "https://arabseed-tv.com/", "https://www.arabseed.wine/",
-            "https://e.cimalight.co/", "https://egybests.live/", "https://www.stardima.com/",
-            "https://a.qfilm.tv/", "https://egydead.rip/", "https://mycima.red/", 
-            "https://witanime.you/", "https://animesit.com/"
-        )
-    }
-
-    com.example.ui.components.BackgroundWebView(
-        urls = sitesToVerify,
-        onProgress = { url -> 
-            val domain = try { java.net.URI(url).host } catch (e: Exception) { url }
-            verificationText = "Verifying $domain..."
-        },
-        onSiteVerified = { com.example.utils.SiteVerificationManager.markSiteVerified(it) },
-        onComplete = { verificationComplete = true }
-    )
-
-    LaunchedEffect(verificationComplete) {
+    LaunchedEffect(Unit) {
         startAnimation = true
-        if (!verificationComplete) return@LaunchedEffect
+        delay(2000) // 2 seconds splash
         
         val hasSeenOnboarding = userPrefs.onboardingCompleted.first()
         val isGuest = userPrefs.isGuest.first()
         val isLoggedIn = userPrefs.isLoggedIn.first()
         val startScreen = userPrefs.startScreen.first()
-        
-        delay(500) // Small delay for smooth transition after verification
         
         if (hasSeenOnboarding) {
             if (isGuest || isLoggedIn) {
@@ -166,25 +138,6 @@ fun SplashScreen(
             Text(
                 text = "Your Cinematic World, Anytime, Anywhere.",
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontSize = 14.sp
-            )
-        }
-        
-        Column(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(bottom = 64.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            CircularProgressIndicator(
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(32.dp),
-                strokeWidth = 3.dp
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-            Text(
-                text = verificationText,
-                color = MaterialTheme.colorScheme.onBackground,
                 fontSize = 14.sp
             )
         }
