@@ -98,54 +98,24 @@ fun HiddenVideoExtractor(
                                 var targetServer = "${targetServer ?: ""}";
                                 var loc = window.location.href.toLowerCase();
                                 
-                                // 1. Auto-Click Search Results
-                                if (loc.includes('?s=') || loc.includes('search')) {
-                                    var firstResult = document.querySelector('.Block--Item, .movieItem a, .anime-card a, .post-item a, .item a, .media-block a, .Blocks-Grid-Item a, .grid-item a, .box a, article a, .result-item a, h3 a, .post a, .thumb a, .title a, .box-item a, .video-item a, .poster a');
-                                    if (firstResult && !loc.includes('episode') && !loc.includes('watch')) {
-                                        window.location.href = firstResult.href;
-                                        return;
-                                    }
-                                }
-                                
-                                // 2. Auto-Navigate to Episode (for Series/Anime)
-                                if (!isMovie) {
-                                    var links = document.querySelectorAll('a');
-                                    for(var i=0; i<links.length; i++) {
-                                        var txt = links[i].innerText.trim();
-                                        if (txt === 'الحلقة ' + epNum || txt === 'حلقه ' + epNum || txt === ''+epNum || txt === 'Episode ' + epNum) {
-                                            window.location.href = links[i].href;
-                                            return;
-                                        }
-                                    }
-                                    // Fallback: click first episode if exact not found and we are on a season/series page
-                                    if (!loc.includes('episode') && !loc.includes('ep-')) {
-                                        var firstEp = document.querySelector('.EpsList a, .episodes-lists a, .episodes a, .episode-link');
-                                        if (firstEp) {
-                                            window.location.href = firstEp.href;
-                                            return;
-                                        }
-                                    }
-                                }
-                                
-                                // 3. Auto-Play Players (MegaMax, VidSrc, etc)
+                                // 1. Auto-Play Players (MegaMax, VidSrc, etc)
                                 setInterval(function() {
                                     var iframes = document.getElementsByTagName('iframe');
                                     for (var i = 0; i < iframes.length; i++) {
                                         try {
                                             var playBtn = iframes[i].contentWindow.document.querySelector('.play-button, .jw-icon-display, video, .vjs-big-play-button');
                                             if (playBtn) playBtn.click();
-                                            // Also click the iframe itself if possible
                                         } catch(e) {}
                                     }
                                     var localPlay = document.querySelector('.play-button, .jw-icon-display, video, .vjs-big-play-button');
                                     if (localPlay) localPlay.click();
                                     
                                     // Some sites need us to click a watch button first
-                                    var watchBtn = document.querySelector('.watch-btn, #watch-btn, a.watch, .btn-watch');
+                                    var watchBtn = document.querySelector('.watch-btn, #watch-btn, a.watch, .btn-watch, .play-btn');
                                     if(watchBtn && !loc.includes('watch')) watchBtn.click();
                                     
                                     // Some sites use servers list to load iframe
-                                    var serverList = document.querySelectorAll('ul.servers li, .server-list li, .serversList li, .watch-servers li, .list-servers li, .servers-list li');
+                                    var serverList = document.querySelectorAll('ul.servers li, .server-list li, .serversList li, .watch-servers li, .list-servers li, .servers-list li, .mob-servers ul li');
                                     var clickedTarget = false;
                                     if (serverList && serverList.length > 0) {
                                         if (targetServer !== "") {

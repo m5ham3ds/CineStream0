@@ -16,33 +16,23 @@ data class PlayerUiState(
     val title: String = "",
 
     // Website (Provider)
-    val availableWebsites: List<String> = listOf(
-        "tv10.egydead.live",
-        "a.qfilm.tv",
-        "egydead.rip",
-        "mycima.red",
-        "witanime.you",
-        "animesit.com",
-        "VidSrc",
-        "SuperStream",
-        "FlixHQ",
-        "Goku",
-        "EgyBest",
-        "FaselHD",
-        "EgyDead",
-        "Anime4Up",
-        "WitAnime",
-        "CimaLeek",
-        "Asia2TV",
-        "TukTukCinema",
-        "ArabSeedTV",
-        "ArabSeedWine",
+        val availableWebsites: List<String> = listOf(
+        "EgyDead TV10",
+        "QFilm",
+        "Animeat",
+        "Arabanime",
+        "ArabSeed",
+        "ArabSeed Wine",
+        "Animerco",
         "CimaLight",
-        "EgyBestLive",
-        "StarDima",
-        "WatchStarDima"
+        "Egy Best",
+        "Stardima",
+        "Brstej",
+        "AnimeLuxe",
+        "Watch Stardima",
+        "WitAnime"
     ),
-    val currentWebsite: String = "tv10.egydead.live",
+    val currentWebsite: String = "EgyDead TV10",
 
     // Server
     val availableServers: List<String> = emptyList(),
@@ -158,70 +148,21 @@ class PlayerViewModel : ViewModel() {
 
     private fun generateExtractionUrl() {
         val state = _uiState.value
-        val encodedTitle = try {
-            java.net.URLEncoder.encode(state.title, "UTF-8")
-        } catch (e: Exception) {
-            state.title
-        }
-
-        val url = if (state.isMovie) {
-            when (state.currentWebsite) {
-                "tv10.egydead.live" -> "https://tv10.egydead.live/?s=$encodedTitle"
-                "a.qfilm.tv" -> "https://a.qfilm.tv/?s=$encodedTitle"
-                "egydead.rip" -> "https://egydead.rip/?s=$encodedTitle"
-                "mycima.red" -> "https://mycima.red/search/$encodedTitle"
-                "witanime.you" -> "https://witanime.you/?search_param=animes&s=$encodedTitle"
-                "animesit.com" -> "https://animesit.com/?s=$encodedTitle"
-                "VidSrc" -> "https://vidsrc.me/embed/movie?tmdb=${state.mediaId}"
-                "SuperStream" -> "https://multiembed.mov/?video_id=${state.mediaId}&tmdb=1"
-                "FlixHQ" -> "https://vidsrc.to/embed/movie/${state.mediaId}"
-                "Goku" -> "https://vidsrc.cc/v2/embed/movie/${state.mediaId}"
-                "EgyBest" -> "https://egydead.icu/?s=$encodedTitle"
-                "FaselHD" -> "https://faselhd.club/?s=$encodedTitle"
-                "EgyDead" -> "https://egydead.icu/?s=$encodedTitle"
-                "Anime4Up" -> "https://anime4up.com/?s=$encodedTitle"
-                "WitAnime" -> "https://witanime.com/?search_param=animes&s=$encodedTitle"
-                "CimaLeek" -> "https://cimaleek.com/?s=$encodedTitle"
-                "Asia2TV" -> "https://asia2tv.cc/?s=$encodedTitle"
-                "TukTukCinema" -> "https://tuktukcinema.net/?s=$encodedTitle"
-                "ArabSeedTV" -> "https://arabseed-tv.com/?s=$encodedTitle"
-                "ArabSeedWine" -> "https://www.arabseed.wine/?s=$encodedTitle"
-                "CimaLight" -> "https://e.cimalight.co/search.php?keywords=$encodedTitle"
-                "EgyBestLive" -> "https://egybests.live/?s=$encodedTitle"
-                "StarDima" -> "https://www.stardima.com/search?query=$encodedTitle"
-                "WatchStarDima" -> "https://watch.stardima.com/watch/?s=$encodedTitle"
-                else -> "https://vidsrc.me/embed/movie?tmdb=${state.mediaId}"
-            }
-        } else {
-            when (state.currentWebsite) {
-                "tv10.egydead.live" -> "https://tv10.egydead.live/?s=$encodedTitle"
-                "a.qfilm.tv" -> "https://a.qfilm.tv/?s=$encodedTitle"
-                "egydead.rip" -> "https://egydead.rip/?s=$encodedTitle"
-                "mycima.red" -> "https://mycima.red/search/$encodedTitle"
-                "witanime.you" -> "https://witanime.you/?search_param=animes&s=$encodedTitle"
-                "animesit.com" -> "https://animesit.com/?s=$encodedTitle"
-                "VidSrc" -> "https://vidsrc.me/embed/tv?tmdb=${state.mediaId}&season=${state.currentSeasonNumber}&episode=${state.currentEpisodeNumber}"
-                "SuperStream" -> "https://multiembed.mov/?video_id=${state.mediaId}&tmdb=1&s=${state.currentSeasonNumber}&e=${state.currentEpisodeNumber}"
-                "FlixHQ" -> "https://vidsrc.to/embed/tv/${state.mediaId}/${state.currentSeasonNumber}/${state.currentEpisodeNumber}"
-                "Goku" -> "https://vidsrc.cc/v2/embed/tv/${state.mediaId}/${state.currentSeasonNumber}/${state.currentEpisodeNumber}"
-                "EgyBest" -> "https://egydead.icu/?s=$encodedTitle"
-                "FaselHD" -> "https://faselhd.club/?s=$encodedTitle"
-                "EgyDead" -> "https://egydead.icu/?s=$encodedTitle"
-                "Anime4Up" -> "https://anime4up.com/?s=$encodedTitle"
-                "WitAnime" -> "https://witanime.com/?search_param=animes&s=$encodedTitle"
-                "CimaLeek" -> "https://cimaleek.com/?s=$encodedTitle"
-                "Asia2TV" -> "https://asia2tv.cc/?s=$encodedTitle"
-                "TukTukCinema" -> "https://tuktukcinema.net/?s=$encodedTitle"
-                "ArabSeedTV" -> "https://arabseed-tv.com/?s=$encodedTitle"
-                "ArabSeedWine" -> "https://www.arabseed.wine/?s=$encodedTitle"
-                "CimaLight" -> "https://e.cimalight.co/search.php?keywords=$encodedTitle"
-                "EgyBestLive" -> "https://egybests.live/?s=$encodedTitle"
-                "StarDima" -> "https://www.stardima.com/search?query=$encodedTitle"
-                "WatchStarDima" -> "https://watch.stardima.com/watch/?s=$encodedTitle"
-                else -> "https://vidsrc.me/embed/tv?tmdb=${state.mediaId}&season=${state.currentSeasonNumber}&episode=${state.currentEpisodeNumber}"
+        
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isLoading = true, extractionUrl = null)
+            val watchUrl = com.example.data.repository.ScraperRepository.getWatchUrl(
+                website = state.currentWebsite,
+                query = state.title,
+                isMovie = state.isMovie,
+                season = state.currentSeasonNumber,
+                episode = state.currentEpisodeNumber
+            )
+            
+            if (watchUrl != null) {
+                _uiState.value = _uiState.value.copy(extractionUrl = watchUrl, isLoading = true)
+            } else {
+                _uiState.value = _uiState.value.copy(isLoading = false)
             }
         }
-
-        _uiState.value = _uiState.value.copy(extractionUrl = url, isLoading = true)
-    }
-}
+    }}
