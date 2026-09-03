@@ -98,8 +98,19 @@ fun HiddenVideoExtractor(
                                 var targetServer = "${targetServer ?: ""}";
                                 var loc = window.location.href.toLowerCase();
                                 
-                                // 1. Auto-Play Players (MegaMax, VidSrc, etc)
+                                // 1. Auto-Play Players & Cloudflare Bypass
                                 setInterval(function() {
+                                    // Bypass Cloudflare Turnstile / Captcha
+                                    var cf = document.querySelector('.cf-turnstile-wrapper, #challenge-stage, input[type="checkbox"], #challenge-form, .mark-as-human');
+                                    if (cf) { cf.click(); }
+                                    try {
+                                        var iframesCF = document.querySelectorAll('iframe');
+                                        for (var i = 0; i < iframesCF.length; i++) {
+                                            var innerBtn = iframesCF[i].contentWindow.document.querySelector('input[type="checkbox"]');
+                                            if (innerBtn) innerBtn.click();
+                                        }
+                                    } catch(e) {}
+
                                     var iframes = document.getElementsByTagName('iframe');
                                     for (var i = 0; i < iframes.length; i++) {
                                         try {
