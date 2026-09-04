@@ -125,12 +125,14 @@ fun HiddenVideoExtractor(
                                     var localPlay = document.querySelector('.play-button, .jw-icon-display, video, .vjs-big-play-button');
                                     if (localPlay) localPlay.click();
                                     
-                                    // Some sites need us to click a watch button first
-                                    var watchBtn = document.querySelector('.watch-btn, #watch-btn, a.watch, .btn-watch, .play-btn');
-                                    if(watchBtn && !loc.includes('watch')) watchBtn.click();
-                                    
                                     // Some sites use servers list to load iframe
                                     var serverList = document.querySelectorAll('ul.servers li, .server-list li, .serversList li, .watch-servers li, .list-servers li, .servers-list li, .mob-servers ul li, #servers li, .server_list li, .watch-btn, .DownloadServers li, ul#episode-servers li, ul.NavTabs li, .server-list a, .watch-servers a, .servers-container li, .btn-server, .servers a, .item-server, .server-item, .server-btn, .server-link, a.server-link, ul.donwload-servers-list li, .servers-container button');
+                                    
+                                    // Some sites need us to click a watch button or submit a form first
+                                    var watchBtn = document.querySelector('.watch-btn, #watch-btn, a.watch, .btn-watch, .play-btn, .watchNow button, .watchNow form button');
+                                    if(watchBtn && (!serverList || serverList.length === 0)) {
+                                        watchBtn.click();
+                                    }
                                     var clickedTarget = false;
                                     
                                     if (targetServer === "السيرفر الرئيسي") {

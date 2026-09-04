@@ -42,8 +42,8 @@ fun ServerSelectionDialog(
 ) {
     val coroutineScope = rememberCoroutineScope()
     
-    val animeSites = listOf("witanime.cyou", "anime4up.cam", "animeat.net", "vip.animeluxe.org", "det.animerco.org", "stardima.com", "watch.stardima.com", "tv10.egydead.live")
-    val movieSites = listOf("egydead.plus", "arabseed.show", "qfilm.tv", "cima4u.skin", "faselhd.wtf", "a.qfilm.tv", "arabseed.wine", "egybests.live", "tv10.egydead.live")
+    val animeSites = listOf("tv10.egydead.live", "witanime.cyou", "anime4up.cam", "animeat.net", "vip.animeluxe.org", "det.animerco.org", "stardima.com", "watch.stardima.com")
+    val movieSites = listOf("tv10.egydead.live", "egydead.plus", "arabseed.show", "qfilm.tv", "cima4u.skin", "faselhd.wtf", "a.qfilm.tv", "arabseed.wine", "egybests.live")
     val prioritySites = if (isAnime) animeSites else movieSites
 
     var currentSiteIndex by remember { mutableStateOf(0) }
@@ -166,11 +166,22 @@ fun ServerSelectionDialog(
 
                                         // 1. Search Results -> Click item
                                         if (loc.includes('?s=') || loc.includes('search') || loc.includes('query=')) {
-                                            var result = document.querySelector('a.postBlock, section.main-section ul.posts-list li.movieItem a, .movieItem a, .postBlock a,  ul.pm-ul-browse-videos li a, ul.movie__blocks__ul li a.movie__block, ul.series__ul li a, div.media-block a.image, div.owl-animes a.overlay, div.embla__slide a, .movie-card a, .anime-card a, .item-list a, article a, .post a, .thumb a, .Blocks-Area a.Block-Item, .ep-card a, .episode-card a, .box-item a, .hover-content a, .anime-list-content a, .half-post a, .Block-Item, a.header-featured-item, a.movie-item__link, .pm-video-thumb a, .lucodeia-slider-slide-item, a.overlay, a.absolute.inset-0');
-                                            if (result) { 
+                                            var results = document.querySelectorAll('a.postBlock, section.main-section ul.posts-list li.movieItem a, .movieItem a, .postBlock a,  ul.pm-ul-browse-videos li a, ul.movie__blocks__ul li a.movie__block, ul.series__ul li a, div.media-block a.image, div.owl-animes a.overlay, div.embla__slide a, .movie-card a, .anime-card a, .item-list a, article a, .post a, .thumb a, .Blocks-Area a.Block-Item, .ep-card a, .episode-card a, .box-item a, .hover-content a, .anime-list-content a, .half-post a, .Block-Item, a.header-featured-item, a.movie-item__link, .pm-video-thumb a, .lucodeia-slider-slide-item, a.overlay, a.absolute.inset-0');
+                                            if (results && results.length > 0) {
                                                 clearInterval(intervalId);
-                                                window.location.href = result.href; 
-                                                return; 
+                                                var targetResult = results[0];
+                                                if (!isMovie) {
+                                                    var e = epNum.toString();
+                                                    for (var i=0; i<results.length; i++) {
+                                                        var txt = decodeURIComponent(results[i].href || "").toLowerCase() + " " + (results[i].innerText || results[i].title || results[i].getAttribute('title') || "").toLowerCase();
+                                                        if (txt.includes('حلقة ' + e) || txt.includes('حلقه ' + e) || txt.includes('-' + e + '-') || txt.includes('ep ' + e) || txt.includes('episode ' + e) || txt.includes(' ' + e + ' ')) {
+                                                            targetResult = results[i];
+                                                            break;
+                                                        }
+                                                    }
+                                                }
+                                                window.location.href = targetResult.href;
+                                                return;
                                             }
                                         }
                                         
@@ -178,9 +189,15 @@ fun ServerSelectionDialog(
                                         var serverList = document.querySelectorAll('ul.servers li, .server-list li, .serversList li, .watch-servers li, .list-servers li, .servers-list li, .mob-servers ul li, #servers li, .server_list li, .watch-btn, .DownloadServers li, ul#episode-servers li, ul.NavTabs li, .server-list a, .watch-servers a, .servers-container li, .btn-server, .servers a, .item-server, .server-item, .server-btn, .server-link, a.server-link, ul.donwload-servers-list li, .servers-container button');
                                         var hasServers = serverList && serverList.length > 0;
                                         
-                                        // Click play buttons to reveal iframe if hidden
+                                        // Click play buttons or watch forms to reveal iframe if hidden
                                         var playBtn = document.querySelector('.play-button, .jw-icon-display, video, .vjs-big-play-button, .play-icon, #play-video, .btn-play');
                                         if (playBtn) playBtn.click();
+                                        
+                                        var watchNowBtn = document.querySelector('.watchNow button, .watchNow form button, .watch-btn, #watch-btn');
+                                        if (watchNowBtn && !hasServers && !hasIframe && !hasVideo) {
+                                            watchNowBtn.click();
+                                            return;
+                                        }
                                         
                                         var iframes = document.querySelectorAll('iframe');
                                         var hasIframe = false;
