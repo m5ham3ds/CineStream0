@@ -4,14 +4,13 @@ import android.annotation.SuppressLint
 import android.os.Handler
 import android.os.Looper
 import android.webkit.CookieManager
+import android.webkit.WebResourceRequest
+import android.webkit.WebResourceResponse
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
@@ -24,9 +23,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.example.data.repository.ScraperRepository
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import java.net.URLEncoder
 
 @SuppressLint("SetJavaScriptEnabled")
 @OptIn(ExperimentalMaterial3Api::class)
@@ -40,61 +39,62 @@ fun ServerSelectionDialog(
     onDismiss: () -> Unit,
     onPlay: (url: String, serverName: String, website: String) -> Unit
 ) {
-    val coroutineScope = rememberCoroutineScope()
-    
-    val animeSites = listOf("tv10.egydead.live", "witanime.cyou", "anime4up.cam", "animeat.net", "vip.animeluxe.org", "det.animerco.org", "stardima.com", "watch.stardima.com")
-    val movieSites = listOf("tv10.egydead.live", "egydead.plus", "arabseed.show", "qfilm.tv", "cima4u.skin", "faselhd.wtf", "a.qfilm.tv", "arabseed.wine", "egybests.live")
-    val prioritySites = if (isAnime) animeSites else movieSites
+    val allAnimeSites = listOf("WitAnime", "Anime4up", "AnimeBlkom", "Animeat", "Arabanime", "Animerco", "AnimeLuxe")
+    val allMovieSeriesSites = listOf("TopCinema", "EgyDead TV10", "QFilm", "Egy Best", "ArabSeed Wine", "ArabSeed", "CimaLight", "Stardima", "Brstej", "Watch Stardima", "Laaroza", "Almeshkah")
+
+    val prioritySites = if (isAnime) allAnimeSites else allMovieSeriesSites
 
     var currentSiteIndex by remember { mutableStateOf(0) }
     var currentSiteName by remember { mutableStateOf(prioritySites[0]) }
     
     var isLoading by remember { mutableStateOf(true) }
-    var loadingMessage by remember { mutableStateOf("جاري الفحص وتخطي الحماية...") }
-    
-    var extractedServers by remember { mutableStateOf<List<String>>(emptyList()) }
-    var finalWatchUrl by remember { mutableStateOf<String?>(null) }
+    var loadingMessage by remember { mutableStateOf("جاري البحث...") }
     var isFailed by remember { mutableStateOf(false) }
 
-    LaunchedEffect(currentSiteIndex) {
-        if (currentSiteIndex >= prioritySites.size) {
+    // Holds the URL to load in the WebView
+    var watchUrlToLoad by remember { mutableStateOf<String?>(null) }
+    var foundVideoUrl by remember { mutableStateOf(false) }
+
+    // Move to next site
+    val tryNextSite: () -> Unit = {
+        if (currentSiteIndex < prioritySites.size - 1) {
+            currentSiteIndex++
+            currentSiteName = prioritySites[currentSiteIndex]
+            watchUrlToLoad = null
+            foundVideoUrl = false
+        } else {
             isLoading = false
             isFailed = true
-            return@LaunchedEffect
-        }
-        
-        currentSiteName = prioritySites[currentSiteIndex]
-        loadingMessage = "جاري الفحص في موقع $currentSiteName..."
-        extractedServers = emptyList()
-        finalWatchUrl = null
-        
-        // 25 seconds timeout per site to account for Cloudflare
-        delay(25000)
-        if (extractedServers.isEmpty()) {
-            currentSiteIndex++
         }
     }
 
-    val encodedTitle = URLEncoder.encode(title, "UTF-8")
-    val searchUrl = when {
-        currentSiteName.contains("egydead") -> "https://$currentSiteName/page/1/?s=$encodedTitle"
-        currentSiteName.contains("qfilm") -> "https://$currentSiteName/search.php?keywords=$encodedTitle"
-        currentSiteName.contains("arabseed") -> "https://$currentSiteName/page/1/?s=$encodedTitle"
-        currentSiteName.contains("stardima") -> "https://$currentSiteName/search?query=$encodedTitle&page=1"
-        currentSiteName.contains("witanime") -> "https://$currentSiteName/?search_param=animes&s=$encodedTitle"
-        currentSiteName.contains("anime4up") -> "https://$currentSiteName/?search_param=animes&s=$encodedTitle"
-        currentSiteName.contains("cima4u") -> "https://$currentSiteName/search.php?keywords=$encodedTitle"
-        currentSiteName.contains("faselhd") -> "https://$currentSiteName/?s=$encodedTitle"
-        currentSiteName == "animeat.net" -> "https://animeat.net/?search=$encodedTitle"
-        currentSiteName == "det.animerco.org" -> "https://det.animerco.org/?s=$encodedTitle&page=1"
-        currentSiteName == "e.cimalight.co" -> "https://e.cimalight.co/search.php?keywords=$encodedTitle"
-        currentSiteName == "egybests.live" -> "https://egybests.live/?s=$encodedTitle&page=1"
-        currentSiteName == "uo.brstej.com" -> "https://uo.brstej.com/search.php?keywords=$encodedTitle"
-        currentSiteName == "vip.animeluxe.org" -> "https://vip.animeluxe.org/anime?s=$encodedTitle&page=1"
-        else -> "https://$currentSiteName/?s=$encodedTitle"
+    LaunchedEffect(currentSiteIndex) {
+        isLoading = true
+        loadingMessage = "البحث في موقع $currentSiteName..."
+        watchUrlToLoad = null
+        foundVideoUrl = false
+
+        // 1. Fast Jsoup search
+        val url = ScraperRepository.getWatchUrl(currentSiteName, title, isMovie, season, episode)
+        if (url != null) {
+            loadingMessage = "جاري استخراج الفيديو من $currentSiteName..."
+            watchUrlToLoad = url
+        } else {
+            tryNextSite()
+        }
     }
 
-    if (isLoading && !isFailed) {
+    // 25 second timeout for WebView extraction
+    LaunchedEffect(watchUrlToLoad) {
+        if (watchUrlToLoad != null) {
+            delay(25000)
+            if (!foundVideoUrl) {
+                tryNextSite()
+            }
+        }
+    }
+
+    if (watchUrlToLoad != null && !foundVideoUrl) {
         AndroidView(
             modifier = Modifier.size(1.dp).alpha(0.01f),
             factory = { ctx ->
@@ -111,151 +111,53 @@ fun ServerSelectionDialog(
                     val cookieManager = CookieManager.getInstance()
                     cookieManager.setAcceptCookie(true)
                     cookieManager.setAcceptThirdPartyCookies(this, true)
-                    
-                    addJavascriptInterface(object {
-                        private var lastFailedSiteIndex = -1
-
-                        @android.webkit.JavascriptInterface
-                        fun sendFailed() {
-                            Handler(Looper.getMainLooper()).post {
-                                if (lastFailedSiteIndex != currentSiteIndex) {
-                                    lastFailedSiteIndex = currentSiteIndex
-                                    currentSiteIndex++
-                                }
-                            }
-                        }
-
-                        @android.webkit.JavascriptInterface
-                        fun sendServers(serversStr: String, url: String) {
-                            val servers = serversStr.split(",").filter { it.isNotBlank() }.distinct()
-                            if (servers.isNotEmpty() && extractedServers.isEmpty()) {
-                                Handler(Looper.getMainLooper()).post {
-                                    finalWatchUrl = url
-                                    extractedServers = servers
-                                    isLoading = false
-                                    // Auto-play the first server immediately!
-                                    onPlay(url, servers.first(), currentSiteName)
-                                }
-                            }
-                        }
-                    }, "AndroidBridge")
 
                     webViewClient = object : WebViewClient() {
                         override fun onReceivedSslError(view: WebView?, handler: android.webkit.SslErrorHandler?, error: android.net.http.SslError?) {
                             handler?.proceed()
                         }
+                        
+                        override fun shouldInterceptRequest(view: WebView?, request: WebResourceRequest?): WebResourceResponse? {
+                            val reqUrl = request?.url.toString()
+                            if (!foundVideoUrl && (reqUrl.contains(".m3u8") || reqUrl.contains(".mp4") || reqUrl.contains(".mkv") || reqUrl.contains("videodelivery.net") || reqUrl.contains("v.mp4"))) {
+                                if (!reqUrl.contains("adsystem") && !reqUrl.contains("tracker") && !reqUrl.contains("googleads") && !reqUrl.contains("facebook") && !reqUrl.contains("tiktok")) {
+                                    foundVideoUrl = true
+                                    Handler(Looper.getMainLooper()).post {
+                                        onPlay(reqUrl, "Direct", currentSiteName)
+                                    }
+                                }
+                            }
+                            return super.shouldInterceptRequest(view, request)
+                        }
 
                         override fun onPageFinished(view: WebView, url: String) {
                             super.onPageFinished(view, url)
-                            
-                            val isMovieStr = if (isMovie) "true" else "false"
                             val autoPlayScript = """
                                 (function() {
-                                    var isMovie = $isMovieStr;
-                                    var season = $season;
-                                    var epNum = $episode;
-                                    var loc = window.location.href.toLowerCase();
-                                    
-                                    var intervalId = setInterval(function() {
-                                        // Bypass Cloudflare
+                                    setInterval(function() {
                                         var cf = document.querySelector('.cf-turnstile-wrapper, #challenge-stage, input[type="checkbox"], #challenge-form, .mark-as-human');
-                                        if (cf) { cf.click(); return; }
-                                        
-                                        var isJustAMoment = document.title.includes('Just a moment') || document.title.includes('Cloudflare') || document.title.includes('Attention Required');
-                                        var isCloudflare = cf || isJustAMoment;
-
-                                        // 1. Search Results -> Click item
-                                        if (loc.includes('?s=') || loc.includes('search') || loc.includes('query=')) {
-                                            var result = document.querySelector('a.postBlock, section.main-section ul.posts-list li.movieItem a, .movieItem a, .postBlock a,  ul.pm-ul-browse-videos li a, ul.movie__blocks__ul li a.movie__block, ul.series__ul li a, div.media-block a.image, div.owl-animes a.overlay, div.embla__slide a, .movie-card a, .anime-card a, .item-list a, article a, .post a, .thumb a, .Blocks-Area a.Block-Item, .ep-card a, .episode-card a, .box-item a, .hover-content a, .anime-list-content a, .half-post a, .Block-Item, a.header-featured-item, a.movie-item__link, .pm-video-thumb a, .lucodeia-slider-slide-item, a.overlay, a.absolute.inset-0');
-                                            if (result) { 
-                                                clearInterval(intervalId);
-                                                window.location.href = result.href; 
-                                                return; 
+                                        if (cf) { cf.click(); }
+                                        try {
+                                            var iframesCF = document.querySelectorAll('iframe');
+                                            for (var i = 0; i < iframesCF.length; i++) {
+                                                try {
+                                                    var innerBtn = iframesCF[i].contentWindow.document.querySelector('input[type="checkbox"]');
+                                                    if (innerBtn) innerBtn.click();
+                                                } catch (err) {}
                                             }
+                                        } catch(e) {}
+                                        var iframes = document.getElementsByTagName('iframe');
+                                        for (var i = 0; i < iframes.length; i++) {
+                                            try {
+                                                var playBtn = iframes[i].contentWindow.document.querySelector('.play-button, .jw-icon-display, video, .vjs-big-play-button, .fp-play');
+                                                if (playBtn) playBtn.click();
+                                            } catch(e) {}
                                         }
-                                        
-                                        // 2. Series Page -> Click Season/Episode
+                                        var localPlay = document.querySelector('.play-button, .jw-icon-display, video, .vjs-big-play-button');
+                                        if (localPlay) localPlay.click();
                                         var serverList = document.querySelectorAll('ul.servers li, .server-list li, .serversList li, .watch-servers li, .list-servers li, .servers-list li, .mob-servers ul li, #servers li, .server_list li, .watch-btn, .DownloadServers li, ul#episode-servers li, ul.NavTabs li, .server-list a, .watch-servers a, .servers-container li, .btn-server, .servers a, .item-server, .server-item, .server-btn, .server-link, a.server-link, ul.donwload-servers-list li, .servers-container button');
-                                        var hasServers = serverList && serverList.length > 0;
-                                        
-                                        // Click play buttons to reveal iframe if hidden
-                                        var playBtn = document.querySelector('.play-button, .jw-icon-display, video, .vjs-big-play-button, .play-icon, #play-video, .btn-play');
-                                        if (playBtn) playBtn.click();
-                                        
-                                        var iframes = document.querySelectorAll('iframe');
-                                        var hasIframe = false;
-                                        for(var i=0; i<iframes.length; i++) {
-                                            if(iframes[i].src && !iframes[i].src.includes('cloudflare') && !iframes[i].src.includes('facebook') && !iframes[i].src.includes('twitter')) {
-                                                hasIframe = true; break;
-                                            }
-                                        }
-
-                                        var videoTags = document.querySelectorAll('video');
-                                        var hasVideo = videoTags.length > 0;
-
-                                        if (!isMovie && !hasServers && !hasIframe && !hasVideo) {
-                                            var epLinks = document.querySelectorAll('.episodes__list li a, .EpsList li a, .episodes-list li a, .all-episodes-list li a, .SeasonsEpisodes a, .episodelist a, .episodes a, .ListEp a, ul.episodes li a, .ep-card a, .episode-card a, .List-Episodes a, .list-episodes a, .EpisodesList a, .eplist a, .episode-list a');
-                                            if (epLinks.length > 0) {
-                                                clearInterval(intervalId);
-                                                var targetEp = null;
-                                                for(var i=0; i<epLinks.length; i++) {
-                                                    var text = epLinks[i].innerText || "";
-                                                    if(text.trim() === epNum.toString() || text.includes(" " + epNum.toString() + " ") || text.includes("حلقة " + epNum) || text.includes("الحلقة " + epNum)) {
-                                                        targetEp = epLinks[i];
-                                                        break;
-                                                    }
-                                                }
-                                                if(targetEp) {
-                                                    window.location.href = targetEp.href;
-                                                } else {
-                                                    for(var i=0; i<epLinks.length; i++) {
-                                                        if((epLinks[i].innerText || "").includes(epNum.toString())) {
-                                                            targetEp = epLinks[i]; break;
-                                                        }
-                                                    }
-                                                    window.location.href = targetEp ? targetEp.href : epLinks[0].href;
-                                                }
-                                                return;
-                                            }
-                                        }
-                                        
-                                        // 3. Extract Servers on Watch Page
-                                        if (hasServers || hasIframe || hasVideo) {
-                                            var serverNames = [];
-                                            if (hasServers) {
-                                                for(var i=0; i<serverList.length; i++) {
-                                                    var serverName = serverList[i].innerText.trim();
-                                                    if (serverName) {
-                                                        var sName = serverName.replace(/1080p|720p|480p|360p|240p|1080|720|480|360|240/gi, '').trim();
-                                                        if (sName === "" || sName.includes('جودة') || sName.includes('FHD') || sName.includes('HD') || sName.includes('SD')) {
-                                                            sName = "سيرفر " + (i+1);
-                                                        }
-                                                        serverNames.push(sName);
-                                                    }
-                                                }
-                                            }
-                                            if (serverNames.length === 0 && (hasIframe || hasVideo)) {
-                                                serverNames.push("السيرفر الرئيسي");
-                                            }
-                                            
-                                            if (serverNames.length > 0) {
-                                                // Make unique
-                                                var uniqueServers = [...new Set(serverNames)];
-                                                clearInterval(intervalId);
-                                                if (typeof AndroidBridge !== 'undefined') {
-                                                    AndroidBridge.sendServers(uniqueServers.join(','), window.location.href);
-                                                }
-                                                return;
-                                            }
-                                        }
-                                        
-                                        // 4. Fast Fail (if no search results or servers found after loading)
-                                        if (!isCloudflare && document.readyState === 'complete') {
-                                            window._failCount = (window._failCount || 0) + 1;
-                                            if (window._failCount >= 6) {
-                                                clearInterval(intervalId);
-                                                if (typeof AndroidBridge !== 'undefined') AndroidBridge.sendFailed();
-                                            }
+                                        if (serverList && serverList.length > 0 && document.getElementsByTagName('iframe').length === 0 && document.querySelectorAll('video').length === 0) {
+                                            serverList[0].click();
                                         }
                                     }, 1500);
                                 })();
@@ -267,9 +169,9 @@ fun ServerSelectionDialog(
             },
             update = { webView ->
                 val lastUrl = webView.getTag(com.example.R.id.tag_url) as? String
-                if (lastUrl != searchUrl) {
-                    webView.setTag(com.example.R.id.tag_url, searchUrl)
-                    webView.loadUrl(searchUrl)
+                if (lastUrl != watchUrlToLoad) {
+                    webView.setTag(com.example.R.id.tag_url, watchUrlToLoad)
+                    webView.loadUrl(watchUrlToLoad!!)
                 }
             }
         )
@@ -277,19 +179,15 @@ fun ServerSelectionDialog(
 
     Dialog(
         onDismissRequest = onDismiss,
-        properties = DialogProperties(usePlatformDefaultWidth = false)
+        properties = DialogProperties(usePlatformDefaultWidth = false, dismissOnBackPress = true, dismissOnClickOutside = false)
     ) {
         Surface(
-            modifier = Modifier
-                .fillMaxWidth(0.9f)
-                .wrapContentHeight(),
+            modifier = Modifier.fillMaxWidth(0.9f).wrapContentHeight(),
             shape = MaterialTheme.shapes.large,
             color = MaterialTheme.colorScheme.surface
         ) {
             Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
+                modifier = Modifier.fillMaxWidth().padding(16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Row(
@@ -298,7 +196,7 @@ fun ServerSelectionDialog(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "اختر السيرفر",
+                        text = "جاري تحضير الفيديو",
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold
                     )
@@ -306,9 +204,7 @@ fun ServerSelectionDialog(
                         Icon(Icons.Default.Close, contentDescription = "إغلاق")
                     }
                 }
-
                 Spacer(modifier = Modifier.height(16.dp))
-
                 if (isLoading) {
                     CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                     Spacer(modifier = Modifier.height(16.dp))
@@ -319,45 +215,6 @@ fun ServerSelectionDialog(
                         color = MaterialTheme.colorScheme.error,
                         style = MaterialTheme.typography.bodyLarge
                     )
-                } else if (extractedServers.isNotEmpty()) {
-                    Text(
-                        text = "تم جلب السيرفرات من: $currentSiteName",
-                        color = MaterialTheme.colorScheme.primary,
-                        style = MaterialTheme.typography.labelLarge,
-                        modifier = Modifier.padding(bottom = 8.dp)
-                    )
-                    
-                    LazyColumn(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        items(extractedServers) { server ->
-                            Card(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable {
-                                        onPlay(finalWatchUrl ?: searchUrl, server, currentSiteName)
-                                    },
-                                colors = CardDefaults.cardColors(
-                                    containerColor = MaterialTheme.colorScheme.surfaceVariant
-                                )
-                            ) {
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(16.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.Center
-                                ) {
-                                    Text(
-                                        text = server,
-                                        style = MaterialTheme.typography.titleMedium,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                }
-                            }
-                        }
-                    }
                 }
             }
         }
