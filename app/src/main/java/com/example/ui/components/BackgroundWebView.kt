@@ -86,6 +86,10 @@ fun BackgroundWebView(
                         private var checkRunnable: Runnable? = null
                         private var isBypassed = false
 
+                        override fun onReceivedSslError(view: WebView?, handler: android.webkit.SslErrorHandler?, error: android.net.http.SslError?) {
+                            handler?.proceed()
+                        }
+
                         override fun onPageFinished(view: WebView, url: String) {
                             super.onPageFinished(view, url)
                             cookieManager.flush()

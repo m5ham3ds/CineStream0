@@ -195,7 +195,8 @@ fun MovieDetailsScreen(
                             if (downloadItem?.isCompleted == true) {
                                 onPlay(movie.title, "local_offline_file://${downloadItem.id}", null, null)
                             } else {
-                                onPlay(movie.title, "", null, null) 
+                                isDownloadMode = false
+                                showSourceSheet = true
                             }
                         },
                         modifier = Modifier.weight(1f).height(50.dp),

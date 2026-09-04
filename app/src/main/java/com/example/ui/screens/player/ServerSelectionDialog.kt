@@ -113,6 +113,13 @@ fun ServerSelectionDialog(
                     
                     addJavascriptInterface(object {
                         @android.webkit.JavascriptInterface
+                        fun sendFailed() {
+                            Handler(Looper.getMainLooper()).post {
+                                currentSiteIndex++
+                            }
+                        }
+
+                        @android.webkit.JavascriptInterface
                         fun sendServers(serversStr: String, url: String) {
                             val servers = serversStr.split(",").filter { it.isNotBlank() }.distinct()
                             if (servers.isNotEmpty() && extractedServers.isEmpty()) {
@@ -126,6 +133,10 @@ fun ServerSelectionDialog(
                     }, "AndroidBridge")
 
                     webViewClient = object : WebViewClient() {
+                        override fun onReceivedSslError(view: WebView?, handler: android.webkit.SslErrorHandler?, error: android.net.http.SslError?) {
+                            handler?.proceed()
+                        }
+
                         override fun onPageFinished(view: WebView, url: String) {
                             super.onPageFinished(view, url)
                             
@@ -140,10 +151,13 @@ fun ServerSelectionDialog(
                                     setInterval(function() {
                                         // Bypass Cloudflare
                                         var cf = document.querySelector('.cf-turnstile-wrapper, #challenge-stage, input[type="checkbox"], #challenge-form, .mark-as-human');
-                                        if (cf) { cf.click(); }
+                                        if (cf) { cf.click(); return; }
                                         
+                                        var isJustAMoment = document.title.includes('Just a moment') || document.title.includes('Cloudflare');
+                                        var isCloudflare = cf || isJustAMoment;
+
                                         // 1. Search Results -> Click item
-                                        if (loc.includes('?s=') || loc.includes('search')) {
+                                        if (loc.includes('?s=') || loc.includes('search') || loc.includes('query=')) {
                                             var result = document.querySelector('a.postBlock, section.main-section ul.posts-list li.movieItem a, ul.pm-ul-browse-videos li a, ul.movie__blocks__ul li a.movie__block, ul.series__ul li a, div.media-block a.image, div.owl-animes a.overlay, div.embla__slide a');
                                             if (result) { window.location.href = result.href; return; }
                                         }
@@ -175,6 +189,15 @@ fun ServerSelectionDialog(
                                             if (typeof AndroidBridge !== 'undefined') {
                                                 AndroidBridge.sendServers(serverNames.join(','), window.location.href);
                                             }
+                                            return;
+                                        }
+                                        
+                                        // 4. Fast Fail
+                                        if (!isCloudflare && document.readyState === 'complete') {
+                                            window._failCount = (window._failCount || 0) + 1;
+                                            if (window._failCount >= 4) {
+                                                if (typeof AndroidBridge !== 'undefined') AndroidBridge.sendFailed();
+                                            }
                                         }
                                     }, 1500);
                                 })();
@@ -185,9 +208,9 @@ fun ServerSelectionDialog(
                 }
             },
             update = { webView ->
-                val lastUrl = webView.getTag(android.R.id.text1) as? String
+                val lastUrl = webView.getTag(com.example.R.id.tag_url) as? String
                 if (lastUrl != searchUrl) {
-                    webView.setTag(android.R.id.text1, searchUrl)
+                    webView.setTag(com.example.R.id.tag_url, searchUrl)
                     webView.loadUrl(searchUrl)
                 }
             }

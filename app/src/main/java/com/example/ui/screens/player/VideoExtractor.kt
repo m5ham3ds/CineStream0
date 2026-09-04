@@ -63,6 +63,10 @@ fun HiddenVideoExtractor(
                 webViewClient = object : WebViewClient() {
                     var found = false
 
+                    override fun onReceivedSslError(view: WebView?, handler: android.webkit.SslErrorHandler?, error: android.net.http.SslError?) {
+                        handler?.proceed()
+                    }
+
                     override fun onPageStarted(view: WebView?, url: String?, favicon: android.graphics.Bitmap?) {
                         found = false
                         super.onPageStarted(view, url, favicon)
@@ -162,11 +166,11 @@ fun HiddenVideoExtractor(
         },
         update = { webView ->
             // Use getTag to store the original loaded url to avoid reloading when webView.url changes due to internal navigation
-            val lastUrl = webView.getTag(android.R.id.text1) as? String
-            val lastServer = webView.getTag(android.R.id.text2) as? String
+            val lastUrl = webView.getTag(com.example.R.id.tag_url) as? String
+            val lastServer = webView.getTag(com.example.R.id.tag_server) as? String
 
             if (lastUrl != url) {
-                webView.setTag(android.R.id.text1, url)
+                webView.setTag(com.example.R.id.tag_url, url)
                 webView.setTag(android.R.id.text2, targetServer)
                 webView.loadUrl(url)
             } else if (lastServer != targetServer) {
