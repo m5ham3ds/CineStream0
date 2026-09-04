@@ -42,8 +42,8 @@ fun ServerSelectionDialog(
 ) {
     val coroutineScope = rememberCoroutineScope()
     
-    val animeSites = listOf("witanime.cyou", "anime4up.cam", "animeat.net", "vip.animeluxe.org", "det.animerco.org", "stardima.com", "watch.stardima.com")
-    val movieSites = listOf("egydead.plus", "arabseed.show", "qfilm.tv", "cima4u.skin", "faselhd.wtf", "tv10.egydead.live", "a.qfilm.tv", "arabseed.wine", "egybests.live")
+    val animeSites = listOf("witanime.cyou", "anime4up.cam", "animeat.net", "vip.animeluxe.org", "det.animerco.org", "stardima.com", "watch.stardima.com", "tv10.egydead.live")
+    val movieSites = listOf("egydead.plus", "arabseed.show", "qfilm.tv", "cima4u.skin", "faselhd.wtf", "a.qfilm.tv", "arabseed.wine", "egybests.live", "tv10.egydead.live")
     val prioritySites = if (isAnime) animeSites else movieSites
 
     var currentSiteIndex by remember { mutableStateOf(0) }
@@ -133,6 +133,8 @@ fun ServerSelectionDialog(
                                     finalWatchUrl = url
                                     extractedServers = servers
                                     isLoading = false
+                                    // Auto-play the first server immediately!
+                                    onPlay(url, servers.first(), currentSiteName)
                                 }
                             }
                         }
