@@ -5,16 +5,62 @@ import kotlinx.coroutines.withContext
 import org.jsoup.Jsoup
 import java.net.URLEncoder
 
+
+import android.webkit.CookieManager
+
 object ScraperRepository {
 
+    fun getBaseUrl(website: String): String {
+        return when(website) {
+            "Anime4up", "w1.anime4up.rest" -> "https://w1.anime4up.rest/"
+            "AnimeBlkom", "animeblkom.net" -> "https://animeblkom.net/"
+            "TopCinema", "topcinema.io" -> "https://topcinema.io/"
+            "Laaroza", "laaroza.space" -> "https://laaroza.space/"
+            "Almeshkah", "z1.almeshkah.net" -> "https://z1.almeshkah.net/"
+            "EgyDead TV10", "tv10.egydead.live" -> "https://tv10.egydead.live/"
+            "QFilm", "a.qfilm.tv" -> "https://a.qfilm.tv/"
+            "Animeat", "animeat.net" -> "https://animeat.net/"
+            "Arabanime", "arabanime.net" -> "https://arabanime.net/"
+            "ArabSeed", "arabseed-tv.com" -> "https://arabseed-tv.com/"
+            "ArabSeed Wine", "arabseed.wine" -> "https://www.arabseed.wine/"
+            "Animerco", "det.animerco.org" -> "https://det.animerco.org/"
+            "CimaLight", "e.cimalight.co" -> "https://e.cimalight.co/"
+            "Egy Best", "egybests.live" -> "https://egybests.live/"
+            "Stardima", "stardima.com" -> "https://stardima.com/"
+            "Brstej", "uo.brstej.com" -> "https://uo.brstej.com/"
+            "AnimeLuxe", "vip.animeluxe.org" -> "https://vip.animeluxe.org/"
+            "Watch Stardima", "watch.stardima.com" -> "https://watch.stardima.com/"
+            "WitAnime", "witanime.you", "witanime.com" -> "https://witanime.you/"
+            else -> ""
+        }
+    }
+
     suspend fun getWatchUrl(website: String, query: String, isMovie: Boolean, season: Int, episode: Int): String? = withContext(Dispatchers.IO) {
+
         val encodedQuery = URLEncoder.encode(query, "UTF-8")
         
-        fun connect(url: String) = Jsoup.connect(url)
-            .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
-            .header("Accept-Language", "ar,en-US;q=0.9,en;q=0.8")
-            .referrer("https://google.com/")
-            .timeout(10000)
+        fun connect(url: String): org.jsoup.Connection {
+            var conn = Jsoup.connect(url)
+                .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+                .header("Accept-Language", "ar,en-US;q=0.9,en;q=0.8")
+                .referrer("https://google.com/")
+                .timeout(10000)
+            
+            val cookies = CookieManager.getInstance().getCookie(url)
+            if (cookies != null) {
+                val cookieMap = mutableMapOf<String, String>()
+                val pairs = cookies.split(";")
+                for (pair in pairs) {
+                    val parts = pair.trim().split("=", limit = 2)
+                    if (parts.size == 2) {
+                        cookieMap[parts[0]] = parts[1]
+                    }
+                }
+                conn = conn.cookies(cookieMap)
+            }
+            return conn
+        }
+
             
         try {
             when (website) {

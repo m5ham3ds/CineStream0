@@ -63,9 +63,9 @@ class PlayerViewModel : ViewModel() {
         val hasArabic = initialTitle.any { it in '؀'..'ۿ' }
         val isAnime = initialTitle.contains("anime", ignoreCase = true) || initialTitle.contains("انمي", ignoreCase = true) || initialTitle.contains("أنمي", ignoreCase = true) || initialTitle.contains("Animation", ignoreCase = true)
         
-        val animeSites = listOf("WitAnime", "Anime4up", "AnimeBlkom")
-        val movieSites = listOf("EgyDead TV10", "QFilm", "TopCinema")
-        val seriesSites = listOf("TopCinema", "EgyDead TV10", "Egy Best", "ArabSeed Wine")
+        val animeSites = listOf("WitAnime", "Anime4up", "AnimeBlkom", "Animeat", "Arabanime", "AnimeLuxe")
+        val movieSites = listOf("EgyDead TV10", "QFilm", "TopCinema", "Laaroza", "Almeshkah", "ArabSeed", "ArabSeed Wine", "CimaLight", "Egy Best", "Stardima", "Brstej")
+        val seriesSites = listOf("TopCinema", "EgyDead TV10", "Egy Best", "ArabSeed Wine", "Laaroza", "Almeshkah", "QFilm", "ArabSeed", "CimaLight", "Stardima", "Brstej")
 
         val siteList = when {
             isAnime -> animeSites
