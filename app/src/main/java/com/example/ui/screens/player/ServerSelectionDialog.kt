@@ -39,9 +39,9 @@ fun ServerSelectionDialog(
     var extractedUrl by remember { mutableStateOf<String?>(null) }
     var currentWebsite by remember { mutableStateOf("") }
     
-    val animeSites = listOf("WitAnime", "Anime4up", "AnimeBlkom", "Animeat", "Arabanime", "AnimeLuxe")
-    val movieSites = listOf("EgyDead TV10", "QFilm", "TopCinema", "Laaroza", "Almeshkah", "ArabSeed", "ArabSeed Wine", "CimaLight", "Egy Best", "Stardima", "Brstej")
-    val seriesSites = listOf("TopCinema", "EgyDead TV10", "Egy Best", "ArabSeed Wine", "Almeshkah", "QFilm", "ArabSeed", "CimaLight", "Stardima", "Brstej")
+    val animeSites = listOf("WitAnime", "Anime4up", "AnimeBlkom")
+    val movieSites = listOf("EgyDead TV10", "QFilm", "TopCinema")
+    val seriesSites = listOf("TopCinema", "EgyDead TV10", "Egy Best", "ArabSeed Wine")
 
     val siteList = when {
         isAnime -> animeSites

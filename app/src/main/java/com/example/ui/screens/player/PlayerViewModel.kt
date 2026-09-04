@@ -61,11 +61,11 @@ class PlayerViewModel : ViewModel() {
 
     fun initialize(mediaId: String, isMovie: Boolean, initialTitle: String, directUrl: String? = null, targetServer: String? = null, website: String? = null, seasonNum: Int = 1, episodeNum: Int = 1) {
         val hasArabic = initialTitle.any { it in '؀'..'ۿ' }
-        val isAnime = initialTitle.contains("anime", ignoreCase = true) || initialTitle.contains("أنمي", ignoreCase = true)
+        val isAnime = initialTitle.contains("anime", ignoreCase = true) || initialTitle.contains("انمي", ignoreCase = true) || initialTitle.contains("أنمي", ignoreCase = true) || initialTitle.contains("Animation", ignoreCase = true)
         
-        val animeSites = listOf("WitAnime", "Anime4up", "AnimeBlkom", "Animeat", "Arabanime", "AnimeLuxe")
-        val movieSites = listOf("EgyDead TV10", "QFilm", "TopCinema", "Laaroza", "Almeshkah", "ArabSeed", "ArabSeed Wine", "CimaLight", "Egy Best", "Stardima", "Brstej")
-        val seriesSites = listOf("TopCinema", "EgyDead TV10", "Egy Best", "ArabSeed Wine", "Almeshkah", "QFilm", "ArabSeed", "CimaLight", "Stardima", "Brstej")
+        val animeSites = listOf("WitAnime", "Anime4up", "AnimeBlkom")
+        val movieSites = listOf("EgyDead TV10", "QFilm", "TopCinema")
+        val seriesSites = listOf("TopCinema", "EgyDead TV10", "Egy Best", "ArabSeed Wine")
 
         val siteList = when {
             isAnime -> animeSites

@@ -278,7 +278,7 @@ fun MovieDetailsScreen(
                 ServerSelectionDialog(
                     title = movie.title,
                     isMovie = true,
-                    isAnime = movie.genres.any { it.contains("Anime", ignoreCase = true) || it.contains("انمي", ignoreCase = true) },
+                    isAnime = movie.genres.any { it.contains("Anime", ignoreCase = true) || it.contains("انمي", ignoreCase = true) || it.contains("Animation", ignoreCase = true) || it.contains("رسوم", ignoreCase = true) },
                     onDismiss = { showSourceSheet = false },
                     onPlay = { url, serverName, website ->
                         showSourceSheet = false
@@ -543,7 +543,7 @@ fun SeriesDetailsScreen(
                     isMovie = false,
                     season = uiState.selectedSeason?.seasonNumber ?: 1,
                     episode = ep.episodeNumber,
-                    isAnime = series.genres.any { it.contains("Anime", ignoreCase = true) || it.contains("انمي", ignoreCase = true) },
+                    isAnime = series.genres.any { it.contains("Anime", ignoreCase = true) || it.contains("انمي", ignoreCase = true) || it.contains("Animation", ignoreCase = true) || it.contains("رسوم", ignoreCase = true) },
                     onDismiss = { selectedEpisodeForSource = null },
                     onPlay = { url, serverName, website ->
                         selectedEpisodeForSource = null
