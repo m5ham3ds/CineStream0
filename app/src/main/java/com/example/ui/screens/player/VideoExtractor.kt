@@ -130,30 +130,49 @@ fun HiddenVideoExtractor(
                                     if(watchBtn && !loc.includes('watch')) watchBtn.click();
                                     
                                     // Some sites use servers list to load iframe
-                                    var serverList = document.querySelectorAll('ul.servers li, .server-list li, .serversList li, .watch-servers li, .list-servers li, .servers-list li, .mob-servers ul li');
+                                    var serverList = document.querySelectorAll('ul.servers li, .server-list li, .serversList li, .watch-servers li, .list-servers li, .servers-list li, .mob-servers ul li, #servers li, .server_list li, .watch-btn, .DownloadServers li, ul#episode-servers li, ul.NavTabs li, .server-list a, .watch-servers a, .servers-container li, .btn-server, .servers a, .item-server, .server-item');
                                     var clickedTarget = false;
-                                    if (serverList && serverList.length > 0) {
+                                    
+                                    if (targetServer === "السيرفر الرئيسي") {
+                                        clickedTarget = true;
+                                    } else if (serverList && serverList.length > 0) {
                                         if (targetServer !== "") {
                                             for(var i=0; i<serverList.length; i++) {
-                                                if(serverList[i].innerText.trim() === targetServer) {
+                                                var sName = serverList[i].innerText.trim().replace(/1080p|720p|480p|360p|240p|1080|720|480|360|240/gi, '').trim();
+                                                if (sName === "" && !sName.includes('جودة') && !sName.includes('FHD') && !sName.includes('HD') && !sName.includes('SD')) {
+                                                    sName = "سيرفر " + (i+1);
+                                                }
+                                                if(sName === targetServer || serverList[i].innerText.trim() === targetServer) {
                                                     serverList[i].click();
                                                     clickedTarget = true;
                                                     break;
                                                 }
                                             }
                                         }
-                                        if (!clickedTarget && document.getElementsByTagName('iframe').length === 0) {
+                                        if (!clickedTarget && document.getElementsByTagName('iframe').length === 0 && document.querySelectorAll('video').length === 0) {
                                             serverList[0].click();
                                         }
                                     }
                                     
                                     // Send servers back to Kotlin
-                                    if (serverList && serverList.length > 0 && typeof AndroidBridge !== 'undefined') {
+                                    if (typeof AndroidBridge !== 'undefined') {
                                         var serverNames = [];
-                                        for(var i=0; i<serverList.length; i++) {
-                                            serverNames.push(serverList[i].innerText.trim());
+                                        if (serverList && serverList.length > 0) {
+                                            for(var i=0; i<serverList.length; i++) {
+                                                var sName = serverList[i].innerText.trim().replace(/1080p|720p|480p|360p|240p|1080|720|480|360|240/gi, '').trim();
+                                                if (sName === "" && !sName.includes('جودة') && !sName.includes('FHD') && !sName.includes('HD') && !sName.includes('SD')) {
+                                                    sName = "سيرفر " + (i+1);
+                                                }
+                                                if (sName.length > 0) serverNames.push(sName);
+                                            }
                                         }
-                                        AndroidBridge.sendServers(serverNames.join(','));
+                                        if (serverNames.length === 0 && (document.getElementsByTagName('iframe').length > 0 || document.querySelectorAll('video').length > 0)) {
+                                            serverNames.push("السيرفر الرئيسي");
+                                        }
+                                        var uniqueServers = [...new Set(serverNames)];
+                                        if (uniqueServers.length > 0) {
+                                            AndroidBridge.sendServers(uniqueServers.join(','));
+                                        }
                                     }
                                     
                                 }, 1500);
@@ -171,10 +190,10 @@ fun HiddenVideoExtractor(
 
             if (lastUrl != url) {
                 webView.setTag(com.example.R.id.tag_url, url)
-                webView.setTag(android.R.id.text2, targetServer)
+                webView.setTag(com.example.R.id.tag_server, targetServer)
                 webView.loadUrl(url)
             } else if (lastServer != targetServer) {
-                webView.setTag(android.R.id.text2, targetServer)
+                webView.setTag(com.example.R.id.tag_server, targetServer)
                 webView.reload() // Server changed, reload the page
             }
         }

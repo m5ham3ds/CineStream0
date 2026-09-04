@@ -42,8 +42,8 @@ fun ServerSelectionDialog(
 ) {
     val coroutineScope = rememberCoroutineScope()
     
-    val animeSites = listOf("witanime.you", "animeat.net", "vip.animeluxe.org", "det.animerco.org", "stardima.com", "watch.stardima.com")
-    val movieSites = listOf("tv10.egydead.live", "a.qfilm.tv", "arabseed.wine", "arabseed-tv.com", "egybests.live", "e.cimalight.co", "uo.brstej.com")
+    val animeSites = listOf("witanime.cyou", "anime4up.cam", "animeat.net", "vip.animeluxe.org", "det.animerco.org", "stardima.com", "watch.stardima.com")
+    val movieSites = listOf("egydead.plus", "arabseed.show", "qfilm.tv", "cima4u.skin", "faselhd.wtf", "tv10.egydead.live", "a.qfilm.tv", "arabseed.wine", "egybests.live")
     val prioritySites = if (isAnime) animeSites else movieSites
 
     var currentSiteIndex by remember { mutableStateOf(0) }
@@ -76,20 +76,21 @@ fun ServerSelectionDialog(
     }
 
     val encodedTitle = URLEncoder.encode(title, "UTF-8")
-    val searchUrl = when (currentSiteName) {
-        "tv10.egydead.live" -> "https://tv10.egydead.live/page/1/?s=$encodedTitle"
-        "a.qfilm.tv" -> "https://a.qfilm.tv/search.php?keywords=$encodedTitle"
-        "animeat.net" -> "https://animeat.net/?search=$encodedTitle"
-        "arabseed-tv.com" -> "https://arabseed-tv.com/page/1/?s=$encodedTitle"
-        "arabseed.wine" -> "https://www.arabseed.wine/page/1/?s=$encodedTitle"
-        "det.animerco.org" -> "https://det.animerco.org/?s=$encodedTitle&page=1"
-        "e.cimalight.co" -> "https://e.cimalight.co/search.php?keywords=$encodedTitle"
-        "egybests.live" -> "https://egybests.live/?s=$encodedTitle&page=1"
-        "stardima.com" -> "https://www.stardima.com/search?query=$encodedTitle&page=1"
-        "uo.brstej.com" -> "https://uo.brstej.com/search.php?keywords=$encodedTitle"
-        "vip.animeluxe.org" -> "https://vip.animeluxe.org/anime?s=$encodedTitle&page=1"
-        "watch.stardima.com" -> "https://watch.stardima.com/watch/search_gcse-2/?s=$encodedTitle&page=1"
-        "witanime.you" -> "https://witanime.com/?search_param=animes&s=$encodedTitle"
+    val searchUrl = when {
+        currentSiteName.contains("egydead") -> "https://$currentSiteName/page/1/?s=$encodedTitle"
+        currentSiteName.contains("qfilm") -> "https://$currentSiteName/search.php?keywords=$encodedTitle"
+        currentSiteName.contains("arabseed") -> "https://$currentSiteName/page/1/?s=$encodedTitle"
+        currentSiteName.contains("stardima") -> "https://$currentSiteName/search?query=$encodedTitle&page=1"
+        currentSiteName.contains("witanime") -> "https://$currentSiteName/?search_param=animes&s=$encodedTitle"
+        currentSiteName.contains("anime4up") -> "https://$currentSiteName/?search_param=animes&s=$encodedTitle"
+        currentSiteName.contains("cima4u") -> "https://$currentSiteName/search.php?keywords=$encodedTitle"
+        currentSiteName.contains("faselhd") -> "https://$currentSiteName/?s=$encodedTitle"
+        currentSiteName == "animeat.net" -> "https://animeat.net/?search=$encodedTitle"
+        currentSiteName == "det.animerco.org" -> "https://det.animerco.org/?s=$encodedTitle&page=1"
+        currentSiteName == "e.cimalight.co" -> "https://e.cimalight.co/search.php?keywords=$encodedTitle"
+        currentSiteName == "egybests.live" -> "https://egybests.live/?s=$encodedTitle&page=1"
+        currentSiteName == "uo.brstej.com" -> "https://uo.brstej.com/search.php?keywords=$encodedTitle"
+        currentSiteName == "vip.animeluxe.org" -> "https://vip.animeluxe.org/anime?s=$encodedTitle&page=1"
         else -> "https://$currentSiteName/?s=$encodedTitle"
     }
 
@@ -112,10 +113,15 @@ fun ServerSelectionDialog(
                     cookieManager.setAcceptThirdPartyCookies(this, true)
                     
                     addJavascriptInterface(object {
+                        private var lastFailedSiteIndex = -1
+
                         @android.webkit.JavascriptInterface
                         fun sendFailed() {
                             Handler(Looper.getMainLooper()).post {
-                                currentSiteIndex++
+                                if (lastFailedSiteIndex != currentSiteIndex) {
+                                    lastFailedSiteIndex = currentSiteIndex
+                                    currentSiteIndex++
+                                }
                             }
                         }
 
@@ -148,54 +154,108 @@ fun ServerSelectionDialog(
                                     var epNum = $episode;
                                     var loc = window.location.href.toLowerCase();
                                     
-                                    setInterval(function() {
+                                    var intervalId = setInterval(function() {
                                         // Bypass Cloudflare
                                         var cf = document.querySelector('.cf-turnstile-wrapper, #challenge-stage, input[type="checkbox"], #challenge-form, .mark-as-human');
                                         if (cf) { cf.click(); return; }
                                         
-                                        var isJustAMoment = document.title.includes('Just a moment') || document.title.includes('Cloudflare');
+                                        var isJustAMoment = document.title.includes('Just a moment') || document.title.includes('Cloudflare') || document.title.includes('Attention Required');
                                         var isCloudflare = cf || isJustAMoment;
 
                                         // 1. Search Results -> Click item
                                         if (loc.includes('?s=') || loc.includes('search') || loc.includes('query=')) {
-                                            var result = document.querySelector('a.postBlock, section.main-section ul.posts-list li.movieItem a, ul.pm-ul-browse-videos li a, ul.movie__blocks__ul li a.movie__block, ul.series__ul li a, div.media-block a.image, div.owl-animes a.overlay, div.embla__slide a');
-                                            if (result) { window.location.href = result.href; return; }
+                                            var result = document.querySelector('a.postBlock, section.main-section ul.posts-list li.movieItem a, ul.pm-ul-browse-videos li a, ul.movie__blocks__ul li a.movie__block, ul.series__ul li a, div.media-block a.image, div.owl-animes a.overlay, div.embla__slide a, .movie-card a, .anime-card a, .item-list a, article a, .post a, .thumb a, .Blocks-Area a.Block-Item, .ep-card a, .episode-card a, .box-item a, .hover-content a, .anime-list-content a');
+                                            if (result) { 
+                                                clearInterval(intervalId);
+                                                window.location.href = result.href; 
+                                                return; 
+                                            }
                                         }
                                         
                                         // 2. Series Page -> Click Season/Episode
-                                        if (!isMovie && !loc.includes('episode') && !loc.includes('ep-') && !loc.includes('watch')) {
-                                            var epLinks = document.querySelectorAll('.episodes__list li a, .EpsList li a, .episodes-list li a, .all-episodes-list li a, .SeasonsEpisodes a');
+                                        var serverList = document.querySelectorAll('ul.servers li, .server-list li, .serversList li, .watch-servers li, .list-servers li, .servers-list li, .mob-servers ul li, #servers li, .server_list li, .watch-btn, .DownloadServers li, ul#episode-servers li, ul.NavTabs li, .server-list a, .watch-servers a, .servers-container li, .btn-server, .servers a, .item-server, .server-item');
+                                        var hasServers = serverList && serverList.length > 0;
+                                        
+                                        // Click play buttons to reveal iframe if hidden
+                                        var playBtn = document.querySelector('.play-button, .jw-icon-display, video, .vjs-big-play-button, .play-icon, #play-video, .btn-play');
+                                        if (playBtn) playBtn.click();
+                                        
+                                        var iframes = document.querySelectorAll('iframe');
+                                        var hasIframe = false;
+                                        for(var i=0; i<iframes.length; i++) {
+                                            if(iframes[i].src && !iframes[i].src.includes('cloudflare') && !iframes[i].src.includes('facebook') && !iframes[i].src.includes('twitter')) {
+                                                hasIframe = true; break;
+                                            }
+                                        }
+
+                                        var videoTags = document.querySelectorAll('video');
+                                        var hasVideo = videoTags.length > 0;
+
+                                        if (!isMovie && !hasServers && !hasIframe && !hasVideo) {
+                                            var epLinks = document.querySelectorAll('.episodes__list li a, .EpsList li a, .episodes-list li a, .all-episodes-list li a, .SeasonsEpisodes a, .episodelist a, .episodes a, .ListEp a, ul.episodes li a, .ep-card a, .episode-card a, .List-Episodes a, .list-episodes a, .EpisodesList a, .eplist a, .episode-list a');
                                             if (epLinks.length > 0) {
+                                                clearInterval(intervalId);
+                                                var targetEp = null;
                                                 for(var i=0; i<epLinks.length; i++) {
                                                     var text = epLinks[i].innerText || "";
-                                                    if(text.includes(epNum.toString())) {
-                                                        window.location.href = epLinks[i].href;
-                                                        return;
+                                                    if(text.trim() === epNum.toString() || text.includes(" " + epNum.toString() + " ") || text.includes("حلقة " + epNum) || text.includes("الحلقة " + epNum)) {
+                                                        targetEp = epLinks[i];
+                                                        break;
                                                     }
                                                 }
-                                                // Fallback to first episode
-                                                window.location.href = epLinks[0].href;
+                                                if(targetEp) {
+                                                    window.location.href = targetEp.href;
+                                                } else {
+                                                    for(var i=0; i<epLinks.length; i++) {
+                                                        if((epLinks[i].innerText || "").includes(epNum.toString())) {
+                                                            targetEp = epLinks[i]; break;
+                                                        }
+                                                    }
+                                                    window.location.href = targetEp ? targetEp.href : epLinks[0].href;
+                                                }
                                                 return;
                                             }
                                         }
                                         
                                         // 3. Extract Servers on Watch Page
-                                        var serverList = document.querySelectorAll('ul.servers li, .server-list li, .serversList li, .watch-servers li, .list-servers li, .servers-list li, .mob-servers ul li');
-                                        if (serverList && serverList.length > 0) {
+                                        if (hasServers || hasIframe || hasVideo) {
                                             var serverNames = [];
-                                            for(var i=0; i<serverList.length; i++) {
-                                                serverNames.push(serverList[i].innerText.trim());
+                                            if (hasServers) {
+                                                for(var i=0; i<serverList.length; i++) {
+                                                    var serverName = serverList[i].innerText.trim();
+                                                    if (serverName) {
+                                                        // Strip quality terms from the server name
+                                                        serverName = serverName.replace(/1080p|720p|480p|360p|240p|1080|720|480|360|240/gi, '').trim();
+                                                        // If after stripping it's empty, or it was just "جودة عالية" etc, skip it or give it a default name
+                                                        if (serverName.length > 0 && !serverName.includes('جودة') && !serverName.includes('FHD') && !serverName.includes('HD') && !serverName.includes('SD')) {
+                                                            serverNames.push(serverName);
+                                                        } else if (serverNames.length === 0) {
+                                                            // If we only have qualities, maybe just call it server + index
+                                                            serverNames.push("سيرفر " + (i+1));
+                                                        }
+                                                    }
+                                                }
                                             }
-                                            if (typeof AndroidBridge !== 'undefined') {
-                                                AndroidBridge.sendServers(serverNames.join(','), window.location.href);
+                                            if (serverNames.length === 0 && (hasIframe || hasVideo)) {
+                                                serverNames.push("السيرفر الرئيسي");
                                             }
-                                            return;
+                                            
+                                            if (serverNames.length > 0) {
+                                                // Make unique
+                                                var uniqueServers = [...new Set(serverNames)];
+                                                clearInterval(intervalId);
+                                                if (typeof AndroidBridge !== 'undefined') {
+                                                    AndroidBridge.sendServers(uniqueServers.join(','), window.location.href);
+                                                }
+                                                return;
+                                            }
                                         }
                                         
-                                        // 4. Fast Fail
+                                        // 4. Fast Fail (if no search results or servers found after loading)
                                         if (!isCloudflare && document.readyState === 'complete') {
                                             window._failCount = (window._failCount || 0) + 1;
-                                            if (window._failCount >= 4) {
+                                            if (window._failCount >= 6) {
+                                                clearInterval(intervalId);
                                                 if (typeof AndroidBridge !== 'undefined') AndroidBridge.sendFailed();
                                             }
                                         }
@@ -240,7 +300,7 @@ fun ServerSelectionDialog(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "اختر السيرفر أو الجودة",
+                        text = "اختر السيرفر",
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold
                     )
@@ -263,7 +323,7 @@ fun ServerSelectionDialog(
                     )
                 } else if (extractedServers.isNotEmpty()) {
                     Text(
-                        text = "تم جلب الجودات من: $currentSiteName",
+                        text = "تم جلب السيرفرات من: $currentSiteName",
                         color = MaterialTheme.colorScheme.primary,
                         style = MaterialTheme.typography.labelLarge,
                         modifier = Modifier.padding(bottom = 8.dp)
