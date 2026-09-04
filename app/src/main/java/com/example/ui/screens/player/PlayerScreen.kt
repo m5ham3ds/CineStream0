@@ -126,7 +126,7 @@ fun PlayerScreen(mediaId: String, isMovie: Boolean, title: String, url: String? 
         trackSelector.setParameters(parametersBuilder)
     }
 
-    var showInitialSelection by remember { mutableStateOf(false) }
+    var showInitialSelection by remember { mutableStateOf(true) }
 
     LaunchedEffect(uiState.currentVideoUrl) {
         uiState.currentVideoUrl?.let { url ->
@@ -319,7 +319,9 @@ fun PlayerScreen(mediaId: String, isMovie: Boolean, title: String, url: String? 
                     Box(modifier = Modifier.align(Alignment.CenterStart).padding(start = 24.dp)) {
                         VerticalSlider(
                             value = brightness, 
-                            onValueChange = { brightness = it }
+                            onValueChange = { brightness = it }, 
+                            topIcon = Icons.Default.BrightnessMedium,
+                            bottomIcon = Icons.Default.PictureInPictureAlt
                         )
                     }
 
@@ -327,7 +329,9 @@ fun PlayerScreen(mediaId: String, isMovie: Boolean, title: String, url: String? 
                     Box(modifier = Modifier.align(Alignment.CenterEnd).padding(end = 24.dp)) {
                         VerticalSlider(
                             value = volume, 
-                            onValueChange = { volume = it }
+                            onValueChange = { volume = it }, 
+                            topIcon = Icons.AutoMirrored.Filled.VolumeUp,
+                            bottomIcon = Icons.Default.Fullscreen
                         )
                     }
 
@@ -630,9 +634,14 @@ fun PlayerScreen(mediaId: String, isMovie: Boolean, title: String, url: String? 
 @Composable
 fun VerticalSlider(
     value: Float,
-    onValueChange: (Float) -> Unit
+    onValueChange: (Float) -> Unit,
+    topIcon: ImageVector,
+    bottomIcon: ImageVector
 ) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Icon(topIcon, contentDescription = null, tint = Color.White, modifier = Modifier.size(28.dp))
+        Spacer(modifier = Modifier.height(16.dp))
+        
         Canvas(
             modifier = Modifier
                 .width(32.dp)
@@ -681,6 +690,9 @@ fun VerticalSlider(
                 center = Offset(centerX, thumbY)
             )
         }
+        
+        Spacer(modifier = Modifier.height(16.dp))
+        Icon(bottomIcon, contentDescription = null, tint = Color.White, modifier = Modifier.size(28.dp))
     }
 }
 
