@@ -5,37 +5,9 @@ import kotlinx.coroutines.withContext
 import org.jsoup.Jsoup
 import java.net.URLEncoder
 
-
-
 object ScraperRepository {
 
-    fun getBaseUrl(website: String): String {
-        return when(website) {
-            "Anime4up", "w1.anime4up.rest" -> "https://w1.anime4up.rest/"
-            "AnimeBlkom", "animeblkom.net" -> "https://animeblkom.net/"
-            "TopCinema", "topcinema.io" -> "https://topcinema.io/"
-            "Laaroza", "laaroza.space" -> "https://laaroza.space/"
-            "Almeshkah", "z1.almeshkah.net" -> "https://z1.almeshkah.net/"
-            "EgyDead TV10", "tv10.egydead.live" -> "https://tv10.egydead.live/"
-            "QFilm", "a.qfilm.tv" -> "https://a.qfilm.tv/"
-            "Animeat", "animeat.net" -> "https://animeat.net/"
-            "Arabanime", "arabanime.net" -> "https://arabanime.net/"
-            "ArabSeed", "arabseed-tv.com" -> "https://arabseed-tv.com/"
-            "ArabSeed Wine", "arabseed.wine" -> "https://www.arabseed.wine/"
-            "Animerco", "det.animerco.org" -> "https://det.animerco.org/"
-            "CimaLight", "e.cimalight.co" -> "https://e.cimalight.co/"
-            "Egy Best", "egybests.live" -> "https://egybests.live/"
-            "Stardima", "stardima.com" -> "https://stardima.com/"
-            "Brstej", "uo.brstej.com" -> "https://uo.brstej.com/"
-            "AnimeLuxe", "vip.animeluxe.org" -> "https://vip.animeluxe.org/"
-            "Watch Stardima", "watch.stardima.com" -> "https://watch.stardima.com/"
-            "WitAnime", "witanime.you", "witanime.com" -> "https://witanime.you/"
-            else -> ""
-        }
-    }
-
     suspend fun getWatchUrl(website: String, query: String, isMovie: Boolean, season: Int, episode: Int): String? = withContext(Dispatchers.IO) {
-
         val encodedQuery = URLEncoder.encode(query, "UTF-8")
         
         fun connect(url: String) = Jsoup.connect(url)
@@ -43,65 +15,9 @@ object ScraperRepository {
             .header("Accept-Language", "ar,en-US;q=0.9,en;q=0.8")
             .referrer("https://google.com/")
             .timeout(10000)
-
             
         try {
             when (website) {
-                "Anime4up", "w1.anime4up.rest" -> {
-                    val doc = connect("https://w1.anime4up.rest/?s=$encodedQuery").get()
-                    val link = doc.select("div.anime-grid div.anime-card-themex div.anime-card-poster a.overlay, div.anime-card-title a").first()?.attr("href")
-                    if (link == null) return@withContext null
-                    if (isMovie) return@withContext link
-                    val seriesDoc = connect(link).get()
-                    val episodeLinks = seriesDoc.select("div.ep_num a, a.overlay")
-                    for (epLink in episodeLinks) {
-                        if (epLink.text().replace("\\D+".toRegex(), "") == episode.toString()) return@withContext epLink.attr("href")
-                    }
-                    return@withContext episodeLinks.first()?.attr("href")
-                }
-                "AnimeBlkom", "animeblkom.net" -> {
-                    val doc = connect("https://animeblkom.net/search?query=$encodedQuery").get()
-                    val link = doc.select("div.content div.poster a").first()?.attr("href")
-                    if (link == null) return@withContext null
-                    if (isMovie) return@withContext "https://animeblkom.net/watch/${link.substringAfterLast("/")}/1"
-                    val seriesDoc = connect("https://animeblkom.net" + (if(link.startsWith("/")) link else "/$link")).get()
-                    val episodeLinks = seriesDoc.select("ul.episodes-links li.episode-link a")
-                    for (epLink in episodeLinks) {
-                        if (epLink.text().replace("\\D+".toRegex(), "") == episode.toString()) return@withContext "https://animeblkom.net" + epLink.attr("href")
-                    }
-                    return@withContext "https://animeblkom.net" + (episodeLinks.first()?.attr("href") ?: "")
-                }
-                "TopCinema", "topcinema.io" -> {
-                    val doc = connect("https://topcinema.io/search/?query=$encodedQuery").get()
-                    val link = doc.select("div.Small--Box a").first()?.attr("href")
-                    if (link == null) return@withContext null
-                    if (isMovie) return@withContext link
-                    val seriesDoc = connect(link).get()
-                    val episodeLinks = seriesDoc.select("div.row a")
-                    for (epLink in episodeLinks) {
-                        if (epLink.selectFirst(".epnum")?.text()?.replace("\\D+".toRegex(), "") == episode.toString()) return@withContext epLink.attr("href")
-                    }
-                    return@withContext episodeLinks.first()?.attr("href")
-                }
-                "Laaroza", "laaroza.space" -> {
-                    val doc = connect("https://laaroza.space/search.php?keywords=$encodedQuery").get()
-                    val link = doc.select("ul.pm-ul-browse-videos li div.thumbnail a").first()?.attr("href")
-                    if (link == null) return@withContext null
-                    // Laaroza is mostly for movies/single episodes.
-                    return@withContext link
-                }
-                "Almeshkah", "z1.almeshkah.net" -> {
-                    val doc = connect("https://z1.almeshkah.net/search.php?keywords=$encodedQuery").get()
-                    val link = doc.select("ul.pm-ul-browse-videos li div.thumbnail a").first()?.attr("href")
-                    if (link == null) return@withContext null
-                    if (isMovie) return@withContext link
-                    val seriesDoc = connect(link).get()
-                    val episodeLinks = seriesDoc.select("div.tabcontent a")
-                    for (epLink in episodeLinks) {
-                        if (epLink.text().replace("\\D+".toRegex(), "") == episode.toString()) return@withContext epLink.attr("href")
-                    }
-                    return@withContext episodeLinks.first()?.attr("href")
-                }
                 "EgyDead TV10", "tv10.egydead.live" -> {
                     val doc = connect("https://tv10.egydead.live/page/1/?s=$encodedQuery").get()
                     val link = doc.select("section.main-section ul.posts-list li.movieItem a, div.pin-posts-list ul li.movieItem a").first()?.attr("href")

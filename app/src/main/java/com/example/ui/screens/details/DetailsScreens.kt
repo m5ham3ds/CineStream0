@@ -1,5 +1,4 @@
 package com.example.ui.screens.details
-import com.example.ui.screens.player.ServerSelectionDialog
 import com.example.utils.SiteVerificationManager
 import androidx.compose.ui.res.stringResource
 import com.example.R
@@ -27,6 +26,7 @@ import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 
 import androidx.compose.runtime.*
+import com.example.ui.screens.player.ServerSelectionDialog
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -58,7 +58,7 @@ fun MovieDetailsScreen(
     onPersonClick: (String) -> Unit = {},
     movieId: String, 
     onBack: () -> Unit,
-    onPlay: (String, String?, String?, String?, Int, Int) -> Unit,
+    onPlay: (String, String, String?, String?) -> Unit,
     viewModel: MovieDetailsViewModel = viewModel(factory = ViewModelFactory())
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -193,7 +193,7 @@ fun MovieDetailsScreen(
                     Button(
                         onClick = { 
                             if (downloadItem?.isCompleted == true) {
-                                onPlay(movie.title, "local_offline_file://${downloadItem.id}", null, null, 1, 1)
+                                onPlay(movie.title, "local_offline_file://${downloadItem.id}", null, null)
                             } else {
                                 isDownloadMode = false
                                 showSourceSheet = true
@@ -278,7 +278,6 @@ fun MovieDetailsScreen(
                 ServerSelectionDialog(
                     title = movie.title,
                     isMovie = true,
-                    isAnime = movie.genres.any { it.contains("Anime", ignoreCase = true) || it.contains("انمي", ignoreCase = true) || it.contains("Animation", ignoreCase = true) || it.contains("رسوم", ignoreCase = true) },
                     onDismiss = { showSourceSheet = false },
                     onPlay = { url, serverName, website ->
                         showSourceSheet = false
@@ -299,7 +298,7 @@ fun MovieDetailsScreen(
                                         isMovie = true
                                     )
                                 )
-                                onPlay(movie.title, url, serverName, website, 1, 1)
+                                onPlay(movie.title, url, serverName, website)
                             }
                         }
                     }
@@ -325,7 +324,7 @@ fun SeriesDetailsScreen(
     onPersonClick: (String) -> Unit = {},
     seriesId: String,
     onBack: () -> Unit,
-    onPlay: (String, String?, String?, String?, Int, Int) -> Unit
+    onPlay: (String, String, String?, String?) -> Unit
 ) {
     val context = LocalContext.current
     val viewModel: SeriesDetailsViewModel = viewModel(factory = ViewModelFactory())
@@ -537,15 +536,15 @@ fun SeriesDetailsScreen(
             }
             
             if (selectedEpisodeForSource != null) {
-                val ep = selectedEpisodeForSource!!
                 ServerSelectionDialog(
                     title = series.title,
                     isMovie = false,
                     season = uiState.selectedSeason?.seasonNumber ?: 1,
-                    episode = ep.episodeNumber,
-                    isAnime = series.genres.any { it.contains("Anime", ignoreCase = true) || it.contains("انمي", ignoreCase = true) || it.contains("Animation", ignoreCase = true) || it.contains("رسوم", ignoreCase = true) },
+                    episode = selectedEpisodeForSource?.episodeNumber ?: 1,
+                    isAnime = series.genres.any { it.contains("Anime", ignoreCase = true) },
                     onDismiss = { selectedEpisodeForSource = null },
                     onPlay = { url, serverName, website ->
+                        val ep = selectedEpisodeForSource!!
                         selectedEpisodeForSource = null
                         if (isDownloadMode) {
                             scope.launch {
@@ -560,13 +559,10 @@ fun SeriesDetailsScreen(
                                 val fullTitle = "${series.title} - S${uiState.selectedSeason?.seasonNumber}E${ep.episodeNumber}"
                                 historyRepository.addToHistory(
                                     com.example.data.model.HistoryItem(
-                                        id = series.id,
-                                        title = fullTitle,
-                                        posterUrl = ep.thumbnailUrl,
-                                        isMovie = false
+                                        id = ep.id, title = fullTitle, posterUrl = ep.thumbnailUrl, isMovie = false
                                     )
                                 )
-                                onPlay(series.title, url, serverName, website, uiState.selectedSeason?.seasonNumber ?: 1, ep.episodeNumber)
+                                onPlay(fullTitle, url, serverName, website)
                             }
                         }
                     }

@@ -66,8 +66,7 @@ fun PlayerScreen(mediaId: String, isMovie: Boolean, title: String, url: String? 
     var volume by remember { mutableStateOf(0.5f) }
     var isLocked by remember { mutableStateOf(false) }
     var currentSpeed by remember { mutableStateOf(1f) }
-        var currentQuality by remember { mutableStateOf("Auto") }
-    var availableQualities by remember { mutableStateOf(listOf("Auto")) }
+    var currentQuality by remember { mutableStateOf("Auto") }
     var showQualitySheet by remember { mutableStateOf(false) }
     var showEpisodesSheet by remember { mutableStateOf(false) }
     
@@ -107,32 +106,6 @@ fun PlayerScreen(mediaId: String, isMovie: Boolean, title: String, url: String? 
                 override fun onPlaybackStateChanged(state: Int) {
                     if (state == Player.STATE_READY) {
                         totalDuration = duration.coerceAtLeast(0L)
-                        
-                        // Extract actual qualities from ExoPlayer
-                        val trackInfo = trackSelector.currentMappedTrackInfo
-                        if (trackInfo != null) {
-                            val qualities = mutableListOf("Auto")
-                            for (i in 0 until trackInfo.rendererCount) {
-                                if (trackInfo.getRendererType(i) == androidx.media3.common.C.TRACK_TYPE_VIDEO) {
-                                    val trackGroups = trackInfo.getTrackGroups(i)
-                                    for (g in 0 until trackGroups.length) {
-                                        val group = trackGroups.get(g)
-                                        for (t in 0 until group.length) {
-                                            val format = group.getFormat(t)
-                                            if (format.height > 0) {
-                                                qualities.add("${format.height}p")
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                            // Keep unique and sort descending by height, but put Auto first
-                            val uniqueQualities = qualities.distinct().toMutableList()
-                            uniqueQualities.remove("Auto")
-                            uniqueQualities.sortByDescending { it.replace("p", "").toIntOrNull() ?: 0 }
-                            uniqueQualities.add(0, "Auto")
-                            availableQualities = uniqueQualities
-                        }
                     }
                 }
             })
@@ -153,7 +126,7 @@ fun PlayerScreen(mediaId: String, isMovie: Boolean, title: String, url: String? 
         trackSelector.setParameters(parametersBuilder)
     }
 
-    var showInitialSelection by remember { mutableStateOf(false) }
+    var showInitialSelection by remember { mutableStateOf(true) }
 
     LaunchedEffect(uiState.currentVideoUrl) {
         uiState.currentVideoUrl?.let { url ->
@@ -225,14 +198,6 @@ fun PlayerScreen(mediaId: String, isMovie: Boolean, title: String, url: String? 
         // Only load the webview when we don't have a video URL to save data and prevent double-loading
         if (uiState.currentVideoUrl == null) {
             uiState.extractionUrl?.let { url ->
-                // Timeout logic
-                LaunchedEffect(url) {
-                    kotlinx.coroutines.delay(20000) // 20 seconds timeout
-                    if (uiState.currentVideoUrl == null) {
-                        viewModel.onExtractionFailed()
-                    }
-                }
-
                 HiddenVideoExtractor(
                     url = url,
                     isMovie = uiState.isMovie,
@@ -350,14 +315,13 @@ fun PlayerScreen(mediaId: String, isMovie: Boolean, title: String, url: String? 
                         }
                     }
 
-
-
-
                     // Left Vertical Slider (Brightness)
                     Box(modifier = Modifier.align(Alignment.CenterStart).padding(start = 24.dp)) {
                         VerticalSlider(
                             value = brightness, 
-                            onValueChange = { brightness = it }
+                            onValueChange = { brightness = it }, 
+                            topIcon = Icons.Default.BrightnessMedium,
+                            bottomIcon = Icons.Default.PictureInPictureAlt
                         )
                     }
 
@@ -365,10 +329,12 @@ fun PlayerScreen(mediaId: String, isMovie: Boolean, title: String, url: String? 
                     Box(modifier = Modifier.align(Alignment.CenterEnd).padding(end = 24.dp)) {
                         VerticalSlider(
                             value = volume, 
-                            onValueChange = { volume = it }
+                            onValueChange = { volume = it }, 
+                            topIcon = Icons.AutoMirrored.Filled.VolumeUp,
+                            bottomIcon = Icons.Default.Fullscreen
                         )
                     }
-                    
+
                     // Center Playback Controls
                     if (uiState.currentVideoUrl == null) {
                         Column(
@@ -473,7 +439,7 @@ fun PlayerScreen(mediaId: String, isMovie: Boolean, title: String, url: String? 
                             ActionDivider()
                             if (!uiState.isMovie) { BottomAction(icon = Icons.Default.VideoLibrary, text = "Episodes") { showEpisodesSheet = true } }
                             ActionDivider()
-                            QualityAction(currentQuality, onClick = { showQualitySheet = true })
+                            QualityAction(uiState.currentQuality, onClick = { showQualitySheet = true })
                             ActionDivider()
                             BottomAction(icon = Icons.Default.Download, text = "Download") { showDownloadSheet = true }
                         }
@@ -492,7 +458,8 @@ fun PlayerScreen(mediaId: String, isMovie: Boolean, title: String, url: String? 
             Column(modifier = Modifier.padding(16.dp)) {
                 Text("Select Quality", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
                 Spacer(modifier = Modifier.height(16.dp))
-                availableQualities.forEach { q ->
+                val qualities = listOf("Auto", "4K", "1080p", "720p", "480p", "360p")
+                qualities.forEach { q ->
                     TextButton(
                         onClick = { 
                             currentQuality = q
@@ -601,7 +568,7 @@ fun PlayerScreen(mediaId: String, isMovie: Boolean, title: String, url: String? 
         )
     }
 
-    if (false) {
+    if (showInitialSelection) {
         androidx.compose.ui.window.Dialog(onDismissRequest = { 
             // Do not dismiss on outside click to force selection or back press
             onBack()
@@ -667,9 +634,13 @@ fun PlayerScreen(mediaId: String, isMovie: Boolean, title: String, url: String? 
 @Composable
 fun VerticalSlider(
     value: Float,
-    onValueChange: (Float) -> Unit
+    onValueChange: (Float) -> Unit,
+    topIcon: ImageVector,
+    bottomIcon: ImageVector
 ) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Icon(topIcon, contentDescription = null, tint = Color.White, modifier = Modifier.size(28.dp))
+        Spacer(modifier = Modifier.height(16.dp))
         
         Canvas(
             modifier = Modifier
@@ -720,6 +691,8 @@ fun VerticalSlider(
             )
         }
         
+        Spacer(modifier = Modifier.height(16.dp))
+        Icon(bottomIcon, contentDescription = null, tint = Color.White, modifier = Modifier.size(28.dp))
     }
 }
 
