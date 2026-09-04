@@ -8,17 +8,20 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
 
 data class PlayerUiState(
     val isLoading: Boolean = true,
     val mediaId: String = "",
     val isMovie: Boolean = true,
+    val isAnime: Boolean = false,
     val title: String = "",
 
     // Website (Provider)
         val availableWebsites: List<String> = listOf(
         "EgyDead TV10",
         "QFilm",
+        "TopCinema",
         "Animeat",
         "Arabanime",
         "ArabSeed",
@@ -30,9 +33,12 @@ data class PlayerUiState(
         "Brstej",
         "AnimeLuxe",
         "Watch Stardima",
-        "WitAnime"
+        "WitAnime",
+        "Anime4up",
+        "AnimeBlkom"
     ),
     val currentWebsite: String = "EgyDead TV10",
+    val fallbackWebsites: List<String> = emptyList(),
 
     // Server
     val availableServers: List<String> = emptyList(),
@@ -59,20 +65,28 @@ class PlayerViewModel : ViewModel() {
     private val _uiState = MutableStateFlow(PlayerUiState())
     val uiState: StateFlow<PlayerUiState> = _uiState.asStateFlow()
 
+    private var extractionTimeoutJob: kotlinx.coroutines.Job? = null
+
     fun initialize(mediaId: String, isMovie: Boolean, initialTitle: String, directUrl: String? = null, targetServer: String? = null, website: String? = null) {
         val hasArabic = initialTitle.any { it in '؀'..'ۿ' }
         val isAnime = initialTitle.contains("anime", ignoreCase = true) || initialTitle.contains("أنمي", ignoreCase = true)
         
-        val bestWebsite = website ?: when {
-            isAnime -> "witanime.you"
-            else -> "tv10.egydead.live"
+        val fallbackList = when {
+            isAnime -> listOf("WitAnime", "Anime4up", "AnimeBlkom")
+            isMovie -> listOf("EgyDead TV10", "QFilm", "TopCinema")
+            else -> listOf("TopCinema", "EgyDead TV10", "Egy Best", "ArabSeed Wine")
         }
+        
+        val bestWebsite = website ?: fallbackList.first()
+        val remainingFallbacks = if (website == null) fallbackList.drop(1) else emptyList()
 
         _uiState.value = _uiState.value.copy(
             mediaId = mediaId,
             isMovie = isMovie,
+            isAnime = isAnime,
             title = initialTitle,
-            currentWebsite = bestWebsite ?: "",
+            currentWebsite = bestWebsite,
+            fallbackWebsites = remainingFallbacks,
             currentServer = targetServer ?: ""
         )
 
@@ -81,6 +95,7 @@ class PlayerViewModel : ViewModel() {
         } else if (!directUrl.isNullOrEmpty()) {
             // It's a watch url (webpage), we need to extract from it
             _uiState.value = _uiState.value.copy(extractionUrl = directUrl, isLoading = true)
+            startExtractionTimeout()
         } else if (!isMovie) {
             loadEpisodes(mediaId, 1) // Default to season 1
         } else {
@@ -111,7 +126,7 @@ class PlayerViewModel : ViewModel() {
     }
 
     fun selectWebsite(website: String) {
-        _uiState.value = _uiState.value.copy(currentWebsite = website, isLoading = true, currentVideoUrl = null)
+        _uiState.value = _uiState.value.copy(currentWebsite = website, isLoading = true, currentVideoUrl = null, fallbackWebsites = emptyList())
         generateExtractionUrl()
     }
 
@@ -132,6 +147,7 @@ class PlayerViewModel : ViewModel() {
     }
 
     fun setExtractedUrl(url: String) {
+        extractionTimeoutJob?.cancel()
         // Only set if we don't already have one, or if it's a new quality selection
         if (_uiState.value.currentVideoUrl != url) {
             _uiState.value = _uiState.value.copy(
@@ -150,6 +166,32 @@ class PlayerViewModel : ViewModel() {
         }
     }
 
+    private fun startExtractionTimeout() {
+        extractionTimeoutJob?.cancel()
+        extractionTimeoutJob = viewModelScope.launch {
+            delay(15000) // 15 seconds timeout
+            if (_uiState.value.currentVideoUrl == null) {
+                tryNextFallback()
+            }
+        }
+    }
+    
+    private fun tryNextFallback() {
+        val fallbacks = _uiState.value.fallbackWebsites
+        if (fallbacks.isNotEmpty()) {
+            val nextSite = fallbacks.first()
+            _uiState.value = _uiState.value.copy(
+                currentWebsite = nextSite,
+                fallbackWebsites = fallbacks.drop(1),
+                isLoading = true,
+                currentVideoUrl = null
+            )
+            generateExtractionUrl()
+        } else {
+            _uiState.value = _uiState.value.copy(isLoading = false)
+        }
+    }
+
     private fun generateExtractionUrl() {
         val state = _uiState.value
         
@@ -165,8 +207,10 @@ class PlayerViewModel : ViewModel() {
             
             if (watchUrl != null) {
                 _uiState.value = _uiState.value.copy(extractionUrl = watchUrl, isLoading = true)
+                startExtractionTimeout()
             } else {
-                _uiState.value = _uiState.value.copy(isLoading = false)
+                tryNextFallback()
             }
         }
-    }}
+    }
+}

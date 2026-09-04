@@ -145,6 +145,70 @@ object ScraperRepository {
                     }
                     return@withContext episodeLinks.first()?.attr("href")
                 }
+                "Anime4up", "w1.anime4up.rest" -> {
+                    val doc = connect("https://w1.anime4up.rest/?s=$encodedQuery&page=1").get()
+                    val link = doc.select("div.anime-grid div.anime-card-themex div.anime-card-poster a.overlay, div.anime-grid div.anime-card-themex div.anime-card-title a").first()?.attr("href")
+                    if (link == null) return@withContext null
+                    if (isMovie) return@withContext link
+                    val seriesDoc = connect(link).get()
+                    val episodeLinks = seriesDoc.select("div.anime-grid div.anime-card-themex div.ep_num a, div.anime-grid div.anime-card-themex a.overlay")
+                    for (ep in episodeLinks) {
+                        if (ep.text().replace("\\D+".toRegex(), "") == episode.toString()) return@withContext ep.attr("href")
+                    }
+                    return@withContext episodeLinks.first()?.attr("href")
+                }
+                "AnimeBlkom", "animeblkom.net" -> {
+                    val doc = connect("https://animeblkom.net/search?query=$encodedQuery&page=1").get()
+                    val link = doc.select("div.content div.poster a").first()?.attr("href")
+                    if (link == null) return@withContext null
+                    val fullLink = if (link.startsWith("/")) "https://animeblkom.net$link" else link
+                    if (isMovie) return@withContext fullLink
+                    val seriesDoc = connect(fullLink).get()
+                    val episodeLinks = seriesDoc.select("ul.episodes-links li.episode-link a")
+                    for (ep in episodeLinks) {
+                        if (ep.text().replace("\\D+".toRegex(), "") == episode.toString()) return@withContext ep.attr("href")
+                    }
+                    val finalLink = episodeLinks.first()?.attr("href") ?: return@withContext null
+                    return@withContext if (finalLink.startsWith("/")) "https://animeblkom.net$finalLink" else finalLink
+                }
+                "TopCinema", "topcinema.io" -> {
+                    val doc = connect("https://topcinema.io/search/?query=$encodedQuery&page=1").get()
+                    val link = doc.select("div.Small--Box a").first()?.attr("href")
+                    if (link == null) return@withContext null
+                    if (isMovie) return@withContext link
+                    val seriesDoc = connect(link).get()
+                    val episodeLinks = seriesDoc.select("div.row a")
+                    for (ep in episodeLinks) {
+                        if (ep.selectFirst(".epnum")?.text()?.replace("\\D+".toRegex(), "") == episode.toString()) return@withContext ep.attr("href")
+                    }
+                    return@withContext episodeLinks.first()?.attr("href")
+                }
+                "Laaroza", "laaroza.space" -> {
+                    val doc = connect("https://laaroza.space/search.php?page=1&keywords=$encodedQuery").get()
+                    return@withContext doc.select("ul.pm-ul-browse-videos li div.thumbnail a").first()?.attr("href")
+                }
+                "Almeshkah", "z1.almeshkah.net" -> {
+                    val doc = connect("https://z1.almeshkah.net/search.php?page=1&keywords=$encodedQuery").get()
+                    val link = doc.select("ul.pm-ul-browse-videos li div.thumbnail a").first()?.attr("href")
+                    if (link == null) return@withContext null
+                    if (isMovie) return@withContext link
+                    val seriesDoc = connect(link).get()
+                    val seasonsBox = seriesDoc.selectFirst("div.SeasonsBox")
+                    if (seasonsBox != null) {
+                        val seasonButtons = seasonsBox.select("button.tablinks")
+                        for (button in seasonButtons) {
+                            val seasonId = button.attr("onclick").substringAfter("openCity(event, '").substringBefore("')")
+                            if (seasonId.isNotEmpty()) {
+                                val seasonContent = seriesDoc.getElementById(seasonId)
+                                val episodeLinks = seasonContent?.select("a") ?: continue
+                                for (ep in episodeLinks) {
+                                    if (ep.text().replace("\\D+".toRegex(), "") == episode.toString()) return@withContext ep.attr("href")
+                                }
+                            }
+                        }
+                    }
+                    return@withContext seriesDoc.select("div.tabcontent a").first()?.attr("href")
+                }
                 "WitAnime", "witanime.you", "witanime.com" -> {
                     val doc = connect("https://witanime.com/?search_param=animes&s=$encodedQuery").get()
                     val link = doc.select("div.owl-animes .anime-card-container a.overlay, div.episodes-card-container a.overlay").first()?.attr("href")
