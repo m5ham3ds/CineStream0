@@ -39,10 +39,11 @@ fun ServerSelectionDialog(
     onDismiss: () -> Unit,
     onPlay: (url: String, serverName: String, website: String) -> Unit
 ) {
-    val allAnimeSites = listOf("WitAnime", "Anime4up", "AnimeBlkom", "Animeat", "Arabanime", "Animerco", "AnimeLuxe")
-    val allMovieSeriesSites = listOf("TopCinema", "EgyDead TV10", "QFilm", "Egy Best", "ArabSeed Wine", "ArabSeed", "CimaLight", "Stardima", "Brstej", "Watch Stardima", "Laaroza", "Almeshkah")
+    val priorityAnimeSites = listOf("WitAnime", "Anime4up", "AnimeBlkom", "Animeat", "Arabanime", "Animerco", "AnimeLuxe", "Stardima", "Watch Stardima")
+    val priorityMovieSites = listOf("EgyDead TV10", "QFilm", "TopCinema", "Laaroza", "Almeshkah", "ArabSeed Wine", "ArabSeed", "Egy Best", "CimaLight", "Brstej")
+    val prioritySeriesSites = listOf("TopCinema", "EgyDead TV10", "Almeshkah", "Laaroza", "QFilm", "ArabSeed Wine", "ArabSeed", "Egy Best", "CimaLight", "Brstej")
 
-    val prioritySites = if (isAnime) allAnimeSites else allMovieSeriesSites
+    val prioritySites = if (isAnime) priorityAnimeSites else if (isMovie) priorityMovieSites else prioritySeriesSites
 
     var currentSiteIndex by remember { mutableStateOf(0) }
     var currentSiteName by remember { mutableStateOf(prioritySites[0]) }
@@ -75,11 +76,16 @@ fun ServerSelectionDialog(
         foundVideoUrl = false
 
         // 1. Fast Jsoup search
-        val url = ScraperRepository.getWatchUrl(currentSiteName, title, isMovie, season, episode)
-        if (url != null) {
-            loadingMessage = "جاري استخراج الفيديو من $currentSiteName..."
-            watchUrlToLoad = url
-        } else {
+        try {
+            val url = ScraperRepository.getWatchUrl(currentSiteName, title, isMovie, season, episode)
+            if (url != null) {
+                loadingMessage = "جاري استخراج الفيديو من $currentSiteName..."
+                watchUrlToLoad = url
+            } else {
+                tryNextSite()
+            }
+        } catch (e: Exception) {
+            // If connection fails, move to next site safely
             tryNextSite()
         }
     }
@@ -155,6 +161,10 @@ fun ServerSelectionDialog(
                                         }
                                         var localPlay = document.querySelector('.play-button, .jw-icon-display, video, .vjs-big-play-button');
                                         if (localPlay) localPlay.click();
+                                        
+                                        var watchBtn = document.querySelector('.watch-btn, #watch-btn, a.watch, .btn-watch, .play-btn');
+                                        if (watchBtn && !window.location.href.toLowerCase().includes('watch')) watchBtn.click();
+                                        
                                         var serverList = document.querySelectorAll('ul.servers li, .server-list li, .serversList li, .watch-servers li, .list-servers li, .servers-list li, .mob-servers ul li, #servers li, .server_list li, .watch-btn, .DownloadServers li, ul#episode-servers li, ul.NavTabs li, .server-list a, .watch-servers a, .servers-container li, .btn-server, .servers a, .item-server, .server-item, .server-btn, .server-link, a.server-link, ul.donwload-servers-list li, .servers-container button');
                                         if (serverList && serverList.length > 0 && document.getElementsByTagName('iframe').length === 0 && document.querySelectorAll('video').length === 0) {
                                             serverList[0].click();

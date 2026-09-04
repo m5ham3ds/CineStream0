@@ -53,13 +53,13 @@ class PlayerViewModel : ViewModel() {
         val hasArabic = initialTitle.any { it in '؀'..'ۿ' }
         val isAnime = initialTitle.contains("anime", ignoreCase = true) || initialTitle.contains("أنمي", ignoreCase = true)
         
-        val allAnimeSites = listOf("WitAnime", "Anime4up", "AnimeBlkom", "Animeat", "Arabanime", "Animerco", "AnimeLuxe")
-        val allMovieSeriesSites = listOf("EgyDead TV10", "QFilm", "TopCinema", "Egy Best", "ArabSeed Wine", "ArabSeed", "CimaLight", "Stardima", "Brstej", "Watch Stardima", "Laaroza", "Almeshkah")
+        val allAnimeSites = listOf("WitAnime", "Anime4up", "AnimeBlkom", "Animeat", "Arabanime", "Animerco", "AnimeLuxe", "Stardima", "Watch Stardima")
+        val allMovieSeriesSites = listOf("EgyDead TV10", "QFilm", "TopCinema", "Laaroza", "Almeshkah", "ArabSeed Wine", "ArabSeed", "Egy Best", "CimaLight", "Brstej")
 
         val fallbackList = when {
             isAnime -> listOf("WitAnime", "Anime4up", "AnimeBlkom") + allAnimeSites.filter { it !in listOf("WitAnime", "Anime4up", "AnimeBlkom") }
             isMovie -> listOf("EgyDead TV10", "QFilm", "TopCinema") + allMovieSeriesSites.filter { it !in listOf("EgyDead TV10", "QFilm", "TopCinema") }
-            else -> listOf("TopCinema", "EgyDead TV10", "Egy Best", "ArabSeed Wine") + allMovieSeriesSites.filter { it !in listOf("TopCinema", "EgyDead TV10", "Egy Best", "ArabSeed Wine") }
+            else -> listOf("TopCinema", "EgyDead TV10", "Almeshkah", "Laaroza") + allMovieSeriesSites.filter { it !in listOf("TopCinema", "EgyDead TV10", "Almeshkah", "Laaroza") }
         }
         
         val availableList = if (isAnime) allAnimeSites else allMovieSeriesSites
