@@ -18,26 +18,8 @@ data class PlayerUiState(
     val title: String = "",
 
     // Website (Provider)
-        val availableWebsites: List<String> = listOf(
-        "EgyDead TV10",
-        "QFilm",
-        "TopCinema",
-        "Animeat",
-        "Arabanime",
-        "ArabSeed",
-        "ArabSeed Wine",
-        "Animerco",
-        "CimaLight",
-        "Egy Best",
-        "Stardima",
-        "Brstej",
-        "AnimeLuxe",
-        "Watch Stardima",
-        "WitAnime",
-        "Anime4up",
-        "AnimeBlkom"
-    ),
-    val currentWebsite: String = "EgyDead TV10",
+    val availableWebsites: List<String> = emptyList(),
+    val currentWebsite: String = "",
     val fallbackWebsites: List<String> = emptyList(),
 
     // Server
@@ -71,11 +53,16 @@ class PlayerViewModel : ViewModel() {
         val hasArabic = initialTitle.any { it in '؀'..'ۿ' }
         val isAnime = initialTitle.contains("anime", ignoreCase = true) || initialTitle.contains("أنمي", ignoreCase = true)
         
+        val allAnimeSites = listOf("WitAnime", "Anime4up", "AnimeBlkom", "Animeat", "Arabanime", "Animerco", "AnimeLuxe")
+        val allMovieSeriesSites = listOf("EgyDead TV10", "QFilm", "TopCinema", "Egy Best", "ArabSeed Wine", "ArabSeed", "CimaLight", "Stardima", "Brstej", "Watch Stardima", "Laaroza", "Almeshkah")
+
         val fallbackList = when {
-            isAnime -> listOf("WitAnime", "Anime4up", "AnimeBlkom")
-            isMovie -> listOf("EgyDead TV10", "QFilm", "TopCinema")
-            else -> listOf("TopCinema", "EgyDead TV10", "Egy Best", "ArabSeed Wine")
+            isAnime -> listOf("WitAnime", "Anime4up", "AnimeBlkom") + allAnimeSites.filter { it !in listOf("WitAnime", "Anime4up", "AnimeBlkom") }
+            isMovie -> listOf("EgyDead TV10", "QFilm", "TopCinema") + allMovieSeriesSites.filter { it !in listOf("EgyDead TV10", "QFilm", "TopCinema") }
+            else -> listOf("TopCinema", "EgyDead TV10", "Egy Best", "ArabSeed Wine") + allMovieSeriesSites.filter { it !in listOf("TopCinema", "EgyDead TV10", "Egy Best", "ArabSeed Wine") }
         }
+        
+        val availableList = if (isAnime) allAnimeSites else allMovieSeriesSites
         
         val bestWebsite = website ?: fallbackList.first()
         val remainingFallbacks = if (website == null) fallbackList.drop(1) else emptyList()
@@ -85,6 +72,7 @@ class PlayerViewModel : ViewModel() {
             isMovie = isMovie,
             isAnime = isAnime,
             title = initialTitle,
+            availableWebsites = availableList,
             currentWebsite = bestWebsite,
             fallbackWebsites = remainingFallbacks,
             currentServer = targetServer ?: ""
@@ -169,7 +157,7 @@ class PlayerViewModel : ViewModel() {
     private fun startExtractionTimeout() {
         extractionTimeoutJob?.cancel()
         extractionTimeoutJob = viewModelScope.launch {
-            delay(15000) // 15 seconds timeout
+            delay(25000) // 25 seconds timeout
             if (_uiState.value.currentVideoUrl == null) {
                 tryNextFallback()
             }

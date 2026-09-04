@@ -79,9 +79,9 @@ fun HiddenVideoExtractor(
                         val reqUrl = request?.url.toString()
                         
                         // Look for standard streaming formats
-                        if (!found && (reqUrl.contains(".m3u8") || reqUrl.contains(".mp4"))) {
+                        if (!found && (reqUrl.contains(".m3u8") || reqUrl.contains(".mp4") || reqUrl.contains(".mkv") || reqUrl.contains("videodelivery.net") || reqUrl.contains("v.mp4"))) {
                             // Avoid common ad scripts that might have these strings
-                            if (!reqUrl.contains("adsystem") && !reqUrl.contains("tracker") && !reqUrl.contains("googleads")) {
+                            if (!reqUrl.contains("adsystem") && !reqUrl.contains("tracker") && !reqUrl.contains("googleads") && !reqUrl.contains("facebook") && !reqUrl.contains("tiktok")) {
                                 found = true
                                 Handler(Looper.getMainLooper()).post {
                                     onVideoUrlFound(reqUrl)
@@ -110,15 +110,17 @@ fun HiddenVideoExtractor(
                                     try {
                                         var iframesCF = document.querySelectorAll('iframe');
                                         for (var i = 0; i < iframesCF.length; i++) {
-                                            var innerBtn = iframesCF[i].contentWindow.document.querySelector('input[type="checkbox"]');
-                                            if (innerBtn) innerBtn.click();
+                                            try {
+                                                var innerBtn = iframesCF[i].contentWindow.document.querySelector('input[type="checkbox"]');
+                                                if (innerBtn) innerBtn.click();
+                                            } catch (err) {}
                                         }
                                     } catch(e) {}
 
                                     var iframes = document.getElementsByTagName('iframe');
                                     for (var i = 0; i < iframes.length; i++) {
                                         try {
-                                            var playBtn = iframes[i].contentWindow.document.querySelector('.play-button, .jw-icon-display, video, .vjs-big-play-button');
+                                            var playBtn = iframes[i].contentWindow.document.querySelector('.play-button, .jw-icon-display, video, .vjs-big-play-button, .fp-play');
                                             if (playBtn) playBtn.click();
                                         } catch(e) {}
                                     }

@@ -453,23 +453,10 @@ fun AppNavigation() {
                 textContentColor = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
-        if (isUpdatingData && currentRoute != Screen.Splash.route && currentRoute != Screen.Auth.route && currentRoute != Screen.Onboarding.route && !updateFinishedShowGreen) {
-            SiteVerificationManager.isVerificationStarted = true
-            BackgroundWebView(
-                urls = extensionUrls,
-                onProgress = { },
-                onSiteVerified = { url -> SiteVerificationManager.markSiteVerified(url) },
-                onComplete = { 
-                    SiteVerificationManager.isVerificationComplete = true
-                    updateFinishedShowGreen = true 
-                }
-            )
-        }
         Scaffold(
             containerColor = MaterialTheme.colorScheme.background,
             topBar = {
                 Column {
-
                     if (bottomBarRoutes.contains(currentRoute) || currentRoute in listOf(Screen.Profile.route, Screen.Downloads.route, Screen.Settings.route, Screen.About.route, Screen.Social.route, Screen.Share.route)) {
                     Column(
                         modifier = Modifier
@@ -562,22 +549,6 @@ navController.navigate(Screen.SeriesDetails.createRoute(id)) }
                         
                     }
                 }
-                if ((isUpdatingData || updateFinishedShowGreen) && currentRoute != Screen.Splash.route && currentRoute != Screen.Auth.route && currentRoute != Screen.Onboarding.route) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .background(if (updateFinishedShowGreen) Color(0xFF4CAF50) else Color(0xFFE50914))
-                                .padding(vertical = 4.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = if (updateFinishedShowGreen) "تم التحقق من جميع المواقع بنجاح" else stringResource(R.string.updating_data),
-                                color = MaterialTheme.colorScheme.onBackground,
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                    }
                 }
             },
             bottomBar = {
