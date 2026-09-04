@@ -1,5 +1,4 @@
 package com.example.navigation
-import com.example.utils.SiteVerificationManager
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -55,7 +54,6 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
-import com.example.ui.components.BackgroundWebView
 import androidx.compose.ui.res.stringResource
 import com.example.R
 import androidx.compose.ui.text.style.TextAlign
@@ -122,29 +120,13 @@ fun AppNavigation() {
     var searchQuery by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf("") }
     var showLogoutDialog by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
 
-    var isUpdatingData by remember { mutableStateOf(com.example.utils.NetworkUtils.isInternetAvailable(context)) }
-    var updateFinishedShowGreen by remember { mutableStateOf(false) }
-    
-    androidx.compose.runtime.LaunchedEffect(updateFinishedShowGreen) {
-        if (updateFinishedShowGreen) {
-            kotlinx.coroutines.delay(2000)
-            isUpdatingData = false
-            updateFinishedShowGreen = false
-        }
-    }
     
     
-    val extensionUrls = remember { 
-        listOf(
-            "https://tv10.egydead.live/", "https://vidsrc.me/", "https://multiembed.mov/", "https://vidsrc.to/",
-            "https://egydead.icu/", "https://faselhd.club/", "https://anime4up.com/",
-            "https://witanime.com/", "https://cimaleek.com/", "https://asia2tv.cc/",
-            "https://tuktukcinema.net/", "https://arabseed-tv.com/", "https://www.arabseed.wine/",
-            "https://e.cimalight.co/", "https://egybests.live/", "https://www.stardima.com/",
-            "https://a.qfilm.tv/", "https://egydead.rip/", "https://mycima.red/", 
-            "https://witanime.you/", "https://animesit.com/"
-        )
-    }
+    
+
+    
+    
+    
     val bottomBarRoutes = listOf(
         Screen.Home.route,
         Screen.Movies.route,
@@ -453,18 +435,6 @@ fun AppNavigation() {
                 textContentColor = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
-        if (isUpdatingData && currentRoute != Screen.Splash.route && currentRoute != Screen.Auth.route && currentRoute != Screen.Onboarding.route && !updateFinishedShowGreen) {
-            SiteVerificationManager.isVerificationStarted = true
-            BackgroundWebView(
-                urls = extensionUrls,
-                onProgress = { },
-                onSiteVerified = { url -> SiteVerificationManager.markSiteVerified(url) },
-                onComplete = { 
-                    SiteVerificationManager.isVerificationComplete = true
-                    updateFinishedShowGreen = true 
-                }
-            )
-        }
         Scaffold(
             containerColor = MaterialTheme.colorScheme.background,
             topBar = {
@@ -562,22 +532,7 @@ navController.navigate(Screen.SeriesDetails.createRoute(id)) }
                         
                     }
                 }
-                if ((isUpdatingData || updateFinishedShowGreen) && currentRoute != Screen.Splash.route && currentRoute != Screen.Auth.route && currentRoute != Screen.Onboarding.route) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .background(if (updateFinishedShowGreen) Color(0xFF4CAF50) else Color(0xFFE50914))
-                                .padding(vertical = 4.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = if (updateFinishedShowGreen) "تم التحقق من جميع المواقع بنجاح" else stringResource(R.string.updating_data),
-                                color = MaterialTheme.colorScheme.onBackground,
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                    }
+
                 }
             },
             bottomBar = {
