@@ -35,7 +35,7 @@ object ScraperRepository {
                 }
                 "QFilm", "a.qfilm.tv" -> {
                     val doc = connect("https://a.qfilm.tv/search.php?keywords=$encodedQuery").get()
-                    return@withContext doc.select("ul.pm-ul-browse-videos li a[href*='watch.php']").first()?.attr("href")
+                    return@withContext doc.select("a.header-featured-item, ul.pm-ul-browse-videos li a[href*='watch.php']").first()?.attr("href")
                 }
                 "Animeat", "animeat.net" -> {
                     return@withContext "https://animeat.net/?search=$encodedQuery"
@@ -57,13 +57,14 @@ object ScraperRepository {
                 }
                 "ArabSeed Wine", "arabseed.wine" -> {
                     val doc = connect("https://www.arabseed.wine/page/1/?s=$encodedQuery").get()
-                    val link = doc.select("ul.movie__blocks__ul li a.movie__block, ul.series__ul li a").first()?.attr("href")
+                    val link = doc.select("ul.movie__blocks__ul li a.movie__block, ul.series__ul li a, a.movie__block").first()?.attr("href")
                     if (link == null) return@withContext null
                     if (isMovie) return@withContext link
                     val seriesDoc = connect(link).get()
-                    val episodeLinks = seriesDoc.select("ul.episodes__list li a, ul.episodes__blocks__holder a.episode__item")
+                    val episodeLinks = seriesDoc.select("ul.episodes__list li a, ul.episodes__blocks__holder a.episode__item, a.episode__item")
                     for (ep in episodeLinks) {
-                        if (ep.select("div.epi__num b, div.episode__title em").text() == episode.toString()) return@withContext ep.attr("href")
+                        val numStr = ep.select("div.epi__num b, div.episode__title em").text()
+                        if (numStr == episode.toString() || ep.text().contains("الحلقة $episode") || ep.attr("title").contains("الحلقة $episode")) return@withContext ep.attr("href")
                     }
                     return@withContext episodeLinks.first()?.attr("href")
                 }
@@ -210,16 +211,32 @@ object ScraperRepository {
                     return@withContext seriesDoc.select("div.tabcontent a").first()?.attr("href")
                 }
                 "WitAnime", "witanime.you", "witanime.com" -> {
-                    val doc = connect("https://witanime.com/?search_param=animes&s=$encodedQuery").get()
-                    val link = doc.select("div.owl-animes .anime-card-container a.overlay, div.episodes-card-container a.overlay").first()?.attr("href")
+                    val doc = connect("https://witanime.you/?search_param=animes&s=$encodedQuery").get()
+                    val link = doc.select("div.anime-card-poster a.overlay, div.owl-animes .anime-card-container a.overlay, div.episodes-card-container a.overlay").first()?.attr("href")
                     if (link == null) return@withContext null
                     if (isMovie) return@withContext link
                     val seriesDoc = connect(link).get()
-                    val episodeLinks = seriesDoc.select("ul.all-episodes-list li a")
+                    val episodeLinks = seriesDoc.select("div.episodes-card-title a, ul.all-episodes-list li a")
                     for (ep in episodeLinks) {
-                        if (ep.text().replace("\\D+".toRegex(), "") == episode.toString()) return@withContext ep.attr("href")
+                        if (ep.text().replace("\\D+".toRegex(), "") == episode.toString()) {
+                            val onClick = ep.attr("onclick")
+                            if (onClick.contains("openEpisode('")) {
+                                val base64 = onClick.substringAfter("openEpisode('").substringBefore("')")
+                                return@withContext String(android.util.Base64.decode(base64, android.util.Base64.DEFAULT))
+                            }
+                            return@withContext ep.attr("href")
+                        }
                     }
-                    return@withContext episodeLinks.first()?.attr("href")
+                    val firstEp = episodeLinks.first()
+                    if (firstEp != null) {
+                        val onClick = firstEp.attr("onclick")
+                        if (onClick.contains("openEpisode('")) {
+                            val base64 = onClick.substringAfter("openEpisode('").substringBefore("')")
+                            return@withContext String(android.util.Base64.decode(base64, android.util.Base64.DEFAULT))
+                        }
+                        return@withContext firstEp.attr("href")
+                    }
+                    return@withContext null
                 }
             }
         } catch (e: Exception) {

@@ -201,26 +201,29 @@ fun ServerSelectionDialog(
                                         } catch(e) {}
                                         
                                         // 1. Search Results Click
-                                        var isSearchPage = window.location.href.includes('?s=') || window.location.href.includes('search') || window.location.href.includes('?query=') || window.location.href.includes('/page/');
+                                        var isSearchPage = window.location.href.includes('?s=') || window.location.href.includes('&s=') || window.location.href.includes('search') || window.location.href.includes('?query=') || window.location.href.includes('/page/');
                                         var searchResults = document.querySelectorAll('.pm-ul-browse-videos li a, .movieItem a, .anime-card-poster a, .box-5x1 a, article.item a, a.group\\/card, div.as-episode a, a.postBlock, div.embla__slide a, div.poster a, div.Small--Box a, div.anime-card-container a');
                                         if (isSearchPage && searchResults && searchResults.length > 0 && !window.location.href.toLowerCase().includes('watch') && !window.location.href.toLowerCase().includes('episode')) {
-                                            if (window.location.href.split('#')[0].replace(/\/$/, '') !== searchResults[0].href.split('#')[0].replace(/\/$/, '')) {
-                                                window.location.href = searchResults[0].href;
+                                            if (window.location.href.split('#')[0].replace(/\\/$/, '') !== searchResults[0].href.split('#')[0].replace(/\\/$/, '')) {
+                                                searchResults[0].click();
                                                 return;
                                             }
                                         }
 
-                                        var hasVideoOrServers = document.getElementsByTagName('iframe').length > 0 || document.querySelectorAll('video').length > 0 || document.querySelectorAll('ul.servers li, .server-list li, .serversList li, .watch-servers li, .list-servers li, .servers-list li, .mob-servers ul li, #servers li, .server_list li').length > 0;
+                                        var hasVideoOrServers = document.getElementsByTagName('iframe').length > 0 || document.querySelectorAll('video').length > 0 || document.querySelectorAll('ul.servers li, .server-list li, .serversList li, .watch-servers li, .list-servers li, .servers-list li, .mob-servers ul li, #servers li, .server_list li, .watch-btn, .DownloadServers li, ul#episode-servers li, ul.NavTabs li, .server-list a, .watch-servers a, .servers-container li, .btn-server, .servers a, .item-server, .server-item, .server-btn, .server-link, a.server-link, ul.donwload-servers-list li, .servers-container button, ul.servers__list li, div.embeding ul li, ul#watch-servers-list li, button.watchButton, div.servers span.server a, div.watch--servers--list li.server--item, ul.WatchServers li, ul.list_servers li').length > 0;
 
                                         // 2. Episodes Click
-                                        if (${!isMovie} && !hasVideoOrServers && (window.location.href.toLowerCase().includes('series') || window.location.href.toLowerCase().includes('anime') || window.location.href.toLowerCase().includes('show') || document.querySelectorAll('.EpsList, .episodes-list, .SeasonsEpisodes, .all-episodes-list, .episodes-card-container, #eps, .episodes__list, .episodes__blocks__holder, .tabcontent, .row, .all-episodes, .EpisodesList, #episodes-list-container, .episodes-lists, .episodes-links').length > 0)) {
-                                            var epLinks = document.querySelectorAll('.EpsList a, .episodes-list a, .SeasonsEpisodes a, .all-episodes-list a, .episodes-card-container a, div#eps a.list-group-item, ul.episodes__list li a, ul.episodes__blocks__holder a, div.SeasonsEpisodesMain div.tabcontent a, div.row a, div.all-episodes a, div.EpisodesList a, ul#episodes-list-container a, ul.episodes-lists a, ul.episodes-links a');
+                                        if (${!isMovie} && !hasVideoOrServers && (window.location.href.toLowerCase().includes('series') || window.location.href.toLowerCase().includes('anime') || window.location.href.toLowerCase().includes('show') || document.querySelectorAll('.EpsList, .episodes-list, .SeasonsEpisodes, .all-episodes-list, .episodes-card-container, #eps, .episodes__list, .episodes__blocks__holder, .tabcontent, .row, .all-episodes, .EpisodesList, #episodes-list-container, .episodes-lists, .episodes-links, .episodes-card-title').length > 0)) {
+                                            var epLinks = document.querySelectorAll('.EpsList a, .episodes-list a, .SeasonsEpisodes a, .all-episodes-list a, .episodes-card-container a, div#eps a.list-group-item, ul.episodes__list li a, ul.episodes__blocks__holder a, div.SeasonsEpisodesMain div.tabcontent a, div.row a, div.all-episodes a, div.EpisodesList a, ul#episodes-list-container a, ul.episodes-lists a, ul.episodes-links a, div.episodes-card-title a');
                                             if (epLinks && epLinks.length > 0) {
                                                 var targetEp = Array.from(epLinks).find(l => l.innerText.includes('${episode}') || l.href.includes('${episode}'));
                                                 var epToClick = targetEp ? targetEp : epLinks[0];
                                                 // Prevent loop if already on the episode page
-                                                if (epToClick && window.location.href.split('#')[0].replace(/\/$/, '') !== epToClick.href.split('#')[0].replace(/\/$/, '')) {
-                                                    window.location.href = epToClick.href;
+                                                if (epToClick && epToClick.href && epToClick.href.includes('javascript:void(0)')) {
+                                                    epToClick.click();
+                                                    return;
+                                                } else if (epToClick && window.location.href.split('#')[0].replace(/\\/$/, '') !== epToClick.href.split('#')[0].replace(/\\/$/, '')) {
+                                                    epToClick.click();
                                                     return;
                                                 }
                                             }
