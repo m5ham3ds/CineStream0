@@ -26,7 +26,6 @@ import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 
 import androidx.compose.runtime.*
-import com.example.ui.screens.player.ServerSelectionDialog
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -58,7 +57,7 @@ fun MovieDetailsScreen(
     onPersonClick: (String) -> Unit = {},
     movieId: String, 
     onBack: () -> Unit,
-    onPlay: (String, String, String?, String?) -> Unit,
+    onPlay: (String, String?, String?, String?, Int, Int) -> Unit,
     viewModel: MovieDetailsViewModel = viewModel(factory = ViewModelFactory())
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -193,7 +192,7 @@ fun MovieDetailsScreen(
                     Button(
                         onClick = { 
                             if (downloadItem?.isCompleted == true) {
-                                onPlay(movie.title, "local_offline_file://${downloadItem.id}", null, null)
+                                onPlay(movie.title, "local_offline_file://${downloadItem.id}", null, null, 1, 1)
                             } else {
                                 isDownloadMode = false
                                 showSourceSheet = true
@@ -275,34 +274,22 @@ fun MovieDetailsScreen(
 
             }
             if (showSourceSheet) {
-                ServerSelectionDialog(
-                    title = movie.title,
-                    isMovie = true,
-                    onDismiss = { showSourceSheet = false },
-                    onPlay = { url, serverName, website ->
-                        showSourceSheet = false
-                        if (isDownloadMode) {
-                            scope.launch {
-                                downloadRepository.addToDownloads(com.example.data.model.DownloadItem(
-                                    id = movie.id, title = movie.title, posterUrl = movie.posterUrl, isMovie = true, quality = serverName
-                                ))
-                                com.example.utils.AndroidDownloader.downloadVideo(context, url, "${movie.title} - $serverName")
-                            }
-                        } else {
-                            scope.launch {
-                                historyRepository.addToHistory(
-                                    com.example.data.model.HistoryItem(
-                                        id = movie.id,
-                                        title = movie.title,
-                                        posterUrl = movie.posterUrl,
-                                        isMovie = true
-                                    )
-                                )
-                                onPlay(movie.title, url, serverName, website)
-                            }
-                        }
+                showSourceSheet = false
+                if (isDownloadMode) {
+                    // Not supported instantly
+                } else {
+                    scope.launch {
+                        historyRepository.addToHistory(
+                            com.example.data.model.HistoryItem(
+                                id = movie.id,
+                                title = movie.title,
+                                posterUrl = movie.posterUrl,
+                                isMovie = true
+                            )
+                        )
+                        onPlay(movie.title, null, null, null, 1, 1)
                     }
-                )
+                }
             }
 
             IconButton(
@@ -324,7 +311,7 @@ fun SeriesDetailsScreen(
     onPersonClick: (String) -> Unit = {},
     seriesId: String,
     onBack: () -> Unit,
-    onPlay: (String, String, String?, String?) -> Unit
+    onPlay: (String, String?, String?, String?, Int, Int) -> Unit
 ) {
     val context = LocalContext.current
     val viewModel: SeriesDetailsViewModel = viewModel(factory = ViewModelFactory())
@@ -536,37 +523,24 @@ fun SeriesDetailsScreen(
             }
             
             if (selectedEpisodeForSource != null) {
-                ServerSelectionDialog(
-                    title = series.title,
-                    isMovie = false,
-                    season = uiState.selectedSeason?.seasonNumber ?: 1,
-                    episode = selectedEpisodeForSource?.episodeNumber ?: 1,
-                    isAnime = series.genres.any { it.contains("Anime", ignoreCase = true) },
-                    onDismiss = { selectedEpisodeForSource = null },
-                    onPlay = { url, serverName, website ->
-                        val ep = selectedEpisodeForSource!!
-                        selectedEpisodeForSource = null
-                        if (isDownloadMode) {
-                            scope.launch {
-                                val fullTitle = "${series.title} - S${uiState.selectedSeason?.seasonNumber}E${ep.episodeNumber}"
-                                downloadRepository.addToDownloads(com.example.data.model.DownloadItem(
-                                    id = ep.id, title = fullTitle, posterUrl = ep.thumbnailUrl, isMovie = false, quality = serverName
-                                ))
-                                com.example.utils.AndroidDownloader.downloadVideo(context, url, "$fullTitle - $serverName")
-                            }
-                        } else {
-                            scope.launch {
-                                val fullTitle = "${series.title} - S${uiState.selectedSeason?.seasonNumber}E${ep.episodeNumber}"
-                                historyRepository.addToHistory(
-                                    com.example.data.model.HistoryItem(
-                                        id = ep.id, title = fullTitle, posterUrl = ep.thumbnailUrl, isMovie = false
-                                    )
-                                )
-                                onPlay(fullTitle, url, serverName, website)
-                            }
-                        }
+                val ep = selectedEpisodeForSource!!
+                selectedEpisodeForSource = null
+                if (isDownloadMode) {
+                    // Not supported instantly
+                } else {
+                    scope.launch {
+                        val fullTitle = "${series.title} - S${uiState.selectedSeason?.seasonNumber}E${ep.episodeNumber}"
+                        historyRepository.addToHistory(
+                            com.example.data.model.HistoryItem(
+                                id = series.id,
+                                title = fullTitle,
+                                posterUrl = ep.thumbnailUrl,
+                                isMovie = false
+                            )
+                        )
+                        onPlay(series.title, null, null, null, uiState.selectedSeason?.seasonNumber ?: 1, ep.episodeNumber)
                     }
-                )
+                }
             }
 
             if (showBatchDownloadSheet) {

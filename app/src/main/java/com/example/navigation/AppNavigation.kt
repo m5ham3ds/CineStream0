@@ -875,16 +875,16 @@ navController.navigate(Screen.SeriesDetails.createRoute(it)) }
                         movieId = movieId, 
                         onBack = { navController.popBackStack() },
                         onPersonClick = { personId -> navController.navigate("person/$personId") },
-                        onPlay = { title, url, server, website -> 
-                            if (url.startsWith("trailer:")) {
+                        onPlay = { title, url, server, website, season, episode -> 
+                            if (url?.startsWith("trailer:") == true) {
                                 val trailerId = url.removePrefix("trailer:")
                                 navController.navigate("trailer/$trailerId")
                             } else {
-                                val encodedUrl = URLEncoder.encode(url, "UTF-8")
+                                val encodedUrl = if (!url.isNullOrEmpty()) URLEncoder.encode(url, "UTF-8") else ""
                                 val encodedTitle = URLEncoder.encode(title, "UTF-8")
-                                val encodedServer = URLEncoder.encode(server ?: "", "UTF-8")
-                                val encodedWebsite = URLEncoder.encode(website ?: "", "UTF-8")
-                                navController.navigate("player?mediaId=$movieId&isMovie=true&title=$encodedTitle&url=$encodedUrl&server=$encodedServer&website=$encodedWebsite")
+                                val encodedServer = if (!server.isNullOrEmpty()) URLEncoder.encode(server, "UTF-8") else ""
+                                val encodedWebsite = if (!website.isNullOrEmpty()) URLEncoder.encode(website, "UTF-8") else ""
+                                navController.navigate("player?mediaId=$movieId&isMovie=true&title=$encodedTitle&url=$encodedUrl&server=$encodedServer&website=$encodedWebsite&season=$season&episode=$episode")
                             }
                         }
                     )
@@ -895,16 +895,16 @@ navController.navigate(Screen.SeriesDetails.createRoute(it)) }
                         seriesId = seriesId, 
                         onBack = { navController.popBackStack() },
                         onPersonClick = { personId -> navController.navigate("person/$personId") },
-                        onPlay = { title, url, server, website -> 
-                            if (url.startsWith("trailer:")) {
+                        onPlay = { title, url, server, website, season, episode -> 
+                            if (url?.startsWith("trailer:") == true) {
                                 val trailerId = url.removePrefix("trailer:")
                                 navController.navigate("trailer/$trailerId")
                             } else {
-                                val encodedUrl = URLEncoder.encode(url, "UTF-8")
+                                val encodedUrl = if (!url.isNullOrEmpty()) URLEncoder.encode(url, "UTF-8") else ""
                                 val encodedTitle = URLEncoder.encode(title, "UTF-8")
-                                val encodedServer = URLEncoder.encode(server ?: "", "UTF-8")
-                                val encodedWebsite = URLEncoder.encode(website ?: "", "UTF-8")
-                                navController.navigate("player?mediaId=$seriesId&isMovie=false&title=$encodedTitle&url=$encodedUrl&server=$encodedServer&website=$encodedWebsite")
+                                val encodedServer = if (!server.isNullOrEmpty()) URLEncoder.encode(server, "UTF-8") else ""
+                                val encodedWebsite = if (!website.isNullOrEmpty()) URLEncoder.encode(website, "UTF-8") else ""
+                                navController.navigate("player?mediaId=$seriesId&isMovie=false&title=$encodedTitle&url=$encodedUrl&server=$encodedServer&website=$encodedWebsite&season=$season&episode=$episode")
                             }
                         }
                     )
@@ -915,7 +915,7 @@ navController.navigate(Screen.SeriesDetails.createRoute(it)) }
                     com.example.ui.screens.player.TrailerScreen(trailerId = trailerId, onBack = { navController.popBackStack() })
                 }
 
-                composable("player?mediaId={mediaId}&isMovie={isMovie}&title={title}&url={url}&server={server}&website={website}") { backStackEntry ->
+                composable("player?mediaId={mediaId}&isMovie={isMovie}&title={title}&url={url}&server={server}&website={website}&season={season}&episode={episode}") { backStackEntry ->
                     val mediaId = backStackEntry.arguments?.getString("mediaId") ?: ""
                     val isMovieStr = backStackEntry.arguments?.getString("isMovie") ?: "true"
                     val isMovie = isMovieStr.toBoolean()

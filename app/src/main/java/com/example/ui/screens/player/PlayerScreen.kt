@@ -66,7 +66,8 @@ fun PlayerScreen(mediaId: String, isMovie: Boolean, title: String, url: String? 
     var volume by remember { mutableStateOf(0.5f) }
     var isLocked by remember { mutableStateOf(false) }
     var currentSpeed by remember { mutableStateOf(1f) }
-    var currentQuality by remember { mutableStateOf("Auto") }
+        var currentQuality by remember { mutableStateOf("Auto") }
+    var availableQualities by remember { mutableStateOf(listOf("Auto")) }
     var showQualitySheet by remember { mutableStateOf(false) }
     var showEpisodesSheet by remember { mutableStateOf(false) }
     
@@ -106,6 +107,32 @@ fun PlayerScreen(mediaId: String, isMovie: Boolean, title: String, url: String? 
                 override fun onPlaybackStateChanged(state: Int) {
                     if (state == Player.STATE_READY) {
                         totalDuration = duration.coerceAtLeast(0L)
+                        
+                        // Extract actual qualities from ExoPlayer
+                        val trackInfo = trackSelector.currentMappedTrackInfo
+                        if (trackInfo != null) {
+                            val qualities = mutableListOf("Auto")
+                            for (i in 0 until trackInfo.rendererCount) {
+                                if (trackInfo.getRendererType(i) == androidx.media3.common.C.TRACK_TYPE_VIDEO) {
+                                    val trackGroups = trackInfo.getTrackGroups(i)
+                                    for (g in 0 until trackGroups.length) {
+                                        val group = trackGroups.get(g)
+                                        for (t in 0 until group.length) {
+                                            val format = group.getFormat(t)
+                                            if (format.height > 0) {
+                                                qualities.add("${format.height}p")
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            // Keep unique and sort descending by height, but put Auto first
+                            val uniqueQualities = qualities.distinct().toMutableList()
+                            uniqueQualities.remove("Auto")
+                            uniqueQualities.sortByDescending { it.replace("p", "").toIntOrNull() ?: 0 }
+                            uniqueQualities.add(0, "Auto")
+                            availableQualities = uniqueQualities
+                        }
                     }
                 }
             })
@@ -126,7 +153,7 @@ fun PlayerScreen(mediaId: String, isMovie: Boolean, title: String, url: String? 
         trackSelector.setParameters(parametersBuilder)
     }
 
-    var showInitialSelection by remember { mutableStateOf(true) }
+    var showInitialSelection by remember { mutableStateOf(false) }
 
     LaunchedEffect(uiState.currentVideoUrl) {
         uiState.currentVideoUrl?.let { url ->
@@ -198,6 +225,14 @@ fun PlayerScreen(mediaId: String, isMovie: Boolean, title: String, url: String? 
         // Only load the webview when we don't have a video URL to save data and prevent double-loading
         if (uiState.currentVideoUrl == null) {
             uiState.extractionUrl?.let { url ->
+                // Timeout logic
+                LaunchedEffect(url) {
+                    kotlinx.coroutines.delay(20000) // 20 seconds timeout
+                    if (uiState.currentVideoUrl == null) {
+                        viewModel.onExtractionFailed()
+                    }
+                }
+
                 HiddenVideoExtractor(
                     url = url,
                     isMovie = uiState.isMovie,
@@ -439,7 +474,7 @@ fun PlayerScreen(mediaId: String, isMovie: Boolean, title: String, url: String? 
                             ActionDivider()
                             if (!uiState.isMovie) { BottomAction(icon = Icons.Default.VideoLibrary, text = "Episodes") { showEpisodesSheet = true } }
                             ActionDivider()
-                            QualityAction(uiState.currentQuality, onClick = { showQualitySheet = true })
+                            QualityAction(currentQuality, onClick = { showQualitySheet = true })
                             ActionDivider()
                             BottomAction(icon = Icons.Default.Download, text = "Download") { showDownloadSheet = true }
                         }
@@ -458,8 +493,7 @@ fun PlayerScreen(mediaId: String, isMovie: Boolean, title: String, url: String? 
             Column(modifier = Modifier.padding(16.dp)) {
                 Text("Select Quality", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
                 Spacer(modifier = Modifier.height(16.dp))
-                val qualities = listOf("Auto", "4K", "1080p", "720p", "480p", "360p")
-                qualities.forEach { q ->
+                availableQualities.forEach { q ->
                     TextButton(
                         onClick = { 
                             currentQuality = q
@@ -568,7 +602,7 @@ fun PlayerScreen(mediaId: String, isMovie: Boolean, title: String, url: String? 
         )
     }
 
-    if (showInitialSelection) {
+    if (false) {
         androidx.compose.ui.window.Dialog(onDismissRequest = { 
             // Do not dismiss on outside click to force selection or back press
             onBack()

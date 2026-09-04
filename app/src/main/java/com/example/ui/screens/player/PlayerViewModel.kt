@@ -59,21 +59,34 @@ class PlayerViewModel : ViewModel() {
     private val _uiState = MutableStateFlow(PlayerUiState())
     val uiState: StateFlow<PlayerUiState> = _uiState.asStateFlow()
 
-    fun initialize(mediaId: String, isMovie: Boolean, initialTitle: String, directUrl: String? = null, targetServer: String? = null, website: String? = null) {
+    fun initialize(mediaId: String, isMovie: Boolean, initialTitle: String, directUrl: String? = null, targetServer: String? = null, website: String? = null, seasonNum: Int = 1, episodeNum: Int = 1) {
         val hasArabic = initialTitle.any { it in '؀'..'ۿ' }
         val isAnime = initialTitle.contains("anime", ignoreCase = true) || initialTitle.contains("أنمي", ignoreCase = true)
         
-        val bestWebsite = website ?: when {
-            isAnime -> "witanime.you"
-            else -> "tv10.egydead.live"
+        val animeSites = listOf("WitAnime", "Anime4up", "AnimeBlkom", "Animeat", "Arabanime", "AnimeLuxe")
+        val movieSites = listOf("EgyDead TV10", "QFilm", "TopCinema", "Laaroza", "Almeshkah", "ArabSeed", "ArabSeed Wine", "CimaLight", "Egy Best", "Stardima", "Brstej")
+        val seriesSites = listOf("TopCinema", "EgyDead TV10", "Egy Best", "ArabSeed Wine", "Almeshkah", "QFilm", "ArabSeed", "CimaLight", "Stardima", "Brstej")
+
+        val siteList = when {
+            isAnime -> animeSites
+            isMovie -> movieSites
+            else -> seriesSites
         }
+
+        val bestWebsite = website ?: siteList.first()
+        
+        _uiState.value = _uiState.value.copy(
+            availableWebsites = siteList
+        )
 
         _uiState.value = _uiState.value.copy(
             mediaId = mediaId,
             isMovie = isMovie,
             title = initialTitle,
             currentWebsite = bestWebsite ?: "",
-            currentServer = targetServer ?: ""
+            currentServer = targetServer ?: "",
+            currentSeasonNumber = seasonNum,
+            currentEpisodeNumber = episodeNum
         )
 
         if (!directUrl.isNullOrEmpty() && (directUrl.contains(".mp4") || directUrl.contains(".m3u8") || directUrl.startsWith("local_offline_file"))) {
@@ -155,18 +168,40 @@ class PlayerViewModel : ViewModel() {
         
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, extractionUrl = null)
-            val watchUrl = com.example.data.repository.ScraperRepository.getWatchUrl(
-                website = state.currentWebsite,
-                query = state.title,
-                isMovie = state.isMovie,
-                season = state.currentSeasonNumber,
-                episode = state.currentEpisodeNumber
-            )
+            val watchUrl = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                com.example.data.repository.ScraperRepository.getWatchUrl(
+                    website = state.currentWebsite,
+                    query = state.title,
+                    isMovie = state.isMovie,
+                    season = state.currentSeasonNumber,
+                    episode = state.currentEpisodeNumber
+                )
+            }
             
             if (watchUrl != null) {
                 _uiState.value = _uiState.value.copy(extractionUrl = watchUrl, isLoading = true)
             } else {
-                _uiState.value = _uiState.value.copy(isLoading = false)
+                // Auto Fallback to next site
+                val currentIdx = state.availableWebsites.indexOf(state.currentWebsite)
+                if (currentIdx != -1 && currentIdx < state.availableWebsites.size - 1) {
+                    val nextSite = state.availableWebsites[currentIdx + 1]
+                    _uiState.value = _uiState.value.copy(currentWebsite = nextSite)
+                    generateExtractionUrl()
+                } else {
+                    _uiState.value = _uiState.value.copy(isLoading = false)
+                }
             }
+        }
+    }
+
+    fun onExtractionFailed() {
+        val state = _uiState.value
+        val currentIdx = state.availableWebsites.indexOf(state.currentWebsite)
+        if (currentIdx != -1 && currentIdx < state.availableWebsites.size - 1) {
+            val nextSite = state.availableWebsites[currentIdx + 1]
+            _uiState.value = _uiState.value.copy(currentWebsite = nextSite, currentVideoUrl = null)
+            generateExtractionUrl()
+        } else {
+            _uiState.value = _uiState.value.copy(isLoading = false, currentVideoUrl = null)
         }
     }}
