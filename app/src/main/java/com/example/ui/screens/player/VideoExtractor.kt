@@ -130,7 +130,7 @@ fun HiddenVideoExtractor(
                                     if(watchBtn && !loc.includes('watch')) watchBtn.click();
                                     
                                     // Some sites use servers list to load iframe
-                                    var serverList = document.querySelectorAll('ul.servers li, .server-list li, .serversList li, .watch-servers li, .list-servers li, .servers-list li, .mob-servers ul li, #servers li, .server_list li, .watch-btn, .DownloadServers li, ul#episode-servers li, ul.NavTabs li, .server-list a, .watch-servers a, .servers-container li, .btn-server, .servers a, .item-server, .server-item');
+                                    var serverList = document.querySelectorAll('ul.servers li, .server-list li, .serversList li, .watch-servers li, .list-servers li, .servers-list li, .mob-servers ul li, #servers li, .server_list li, .watch-btn, .DownloadServers li, ul#episode-servers li, ul.NavTabs li, .server-list a, .watch-servers a, .servers-container li, .btn-server, .servers a, .item-server, .server-item, .server-btn, .server-link, a.server-link, ul.donwload-servers-list li, .servers-container button');
                                     var clickedTarget = false;
                                     
                                     if (targetServer === "السيرفر الرئيسي") {
@@ -139,7 +139,7 @@ fun HiddenVideoExtractor(
                                         if (targetServer !== "") {
                                             for(var i=0; i<serverList.length; i++) {
                                                 var sName = serverList[i].innerText.trim().replace(/1080p|720p|480p|360p|240p|1080|720|480|360|240/gi, '').trim();
-                                                if (sName === "" && !sName.includes('جودة') && !sName.includes('FHD') && !sName.includes('HD') && !sName.includes('SD')) {
+                                                if (sName === "" || sName.includes('جودة') || sName.includes('FHD') || sName.includes('HD') || sName.includes('SD')) {
                                                     sName = "سيرفر " + (i+1);
                                                 }
                                                 if(sName === targetServer || serverList[i].innerText.trim() === targetServer) {
@@ -160,10 +160,10 @@ fun HiddenVideoExtractor(
                                         if (serverList && serverList.length > 0) {
                                             for(var i=0; i<serverList.length; i++) {
                                                 var sName = serverList[i].innerText.trim().replace(/1080p|720p|480p|360p|240p|1080|720|480|360|240/gi, '').trim();
-                                                if (sName === "" && !sName.includes('جودة') && !sName.includes('FHD') && !sName.includes('HD') && !sName.includes('SD')) {
+                                                if (sName === "" || sName.includes('جودة') || sName.includes('FHD') || sName.includes('HD') || sName.includes('SD')) {
                                                     sName = "سيرفر " + (i+1);
                                                 }
-                                                if (sName.length > 0) serverNames.push(sName);
+                                                serverNames.push(sName);
                                             }
                                         }
                                         if (serverNames.length === 0 && (document.getElementsByTagName('iframe').length > 0 || document.querySelectorAll('video').length > 0)) {

@@ -164,7 +164,7 @@ fun ServerSelectionDialog(
 
                                         // 1. Search Results -> Click item
                                         if (loc.includes('?s=') || loc.includes('search') || loc.includes('query=')) {
-                                            var result = document.querySelector('a.postBlock, section.main-section ul.posts-list li.movieItem a, ul.pm-ul-browse-videos li a, ul.movie__blocks__ul li a.movie__block, ul.series__ul li a, div.media-block a.image, div.owl-animes a.overlay, div.embla__slide a, .movie-card a, .anime-card a, .item-list a, article a, .post a, .thumb a, .Blocks-Area a.Block-Item, .ep-card a, .episode-card a, .box-item a, .hover-content a, .anime-list-content a');
+                                            var result = document.querySelector('a.postBlock, section.main-section ul.posts-list li.movieItem a, .movieItem a, .postBlock a,  ul.pm-ul-browse-videos li a, ul.movie__blocks__ul li a.movie__block, ul.series__ul li a, div.media-block a.image, div.owl-animes a.overlay, div.embla__slide a, .movie-card a, .anime-card a, .item-list a, article a, .post a, .thumb a, .Blocks-Area a.Block-Item, .ep-card a, .episode-card a, .box-item a, .hover-content a, .anime-list-content a, .half-post a, .Block-Item, a.header-featured-item, a.movie-item__link, .pm-video-thumb a, .lucodeia-slider-slide-item, a.overlay, a.absolute.inset-0');
                                             if (result) { 
                                                 clearInterval(intervalId);
                                                 window.location.href = result.href; 
@@ -173,7 +173,7 @@ fun ServerSelectionDialog(
                                         }
                                         
                                         // 2. Series Page -> Click Season/Episode
-                                        var serverList = document.querySelectorAll('ul.servers li, .server-list li, .serversList li, .watch-servers li, .list-servers li, .servers-list li, .mob-servers ul li, #servers li, .server_list li, .watch-btn, .DownloadServers li, ul#episode-servers li, ul.NavTabs li, .server-list a, .watch-servers a, .servers-container li, .btn-server, .servers a, .item-server, .server-item');
+                                        var serverList = document.querySelectorAll('ul.servers li, .server-list li, .serversList li, .watch-servers li, .list-servers li, .servers-list li, .mob-servers ul li, #servers li, .server_list li, .watch-btn, .DownloadServers li, ul#episode-servers li, ul.NavTabs li, .server-list a, .watch-servers a, .servers-container li, .btn-server, .servers a, .item-server, .server-item, .server-btn, .server-link, a.server-link, ul.donwload-servers-list li, .servers-container button');
                                         var hasServers = serverList && serverList.length > 0;
                                         
                                         // Click play buttons to reveal iframe if hidden
@@ -224,15 +224,11 @@ fun ServerSelectionDialog(
                                                 for(var i=0; i<serverList.length; i++) {
                                                     var serverName = serverList[i].innerText.trim();
                                                     if (serverName) {
-                                                        // Strip quality terms from the server name
-                                                        serverName = serverName.replace(/1080p|720p|480p|360p|240p|1080|720|480|360|240/gi, '').trim();
-                                                        // If after stripping it's empty, or it was just "جودة عالية" etc, skip it or give it a default name
-                                                        if (serverName.length > 0 && !serverName.includes('جودة') && !serverName.includes('FHD') && !serverName.includes('HD') && !serverName.includes('SD')) {
-                                                            serverNames.push(serverName);
-                                                        } else if (serverNames.length === 0) {
-                                                            // If we only have qualities, maybe just call it server + index
-                                                            serverNames.push("سيرفر " + (i+1));
+                                                        var sName = serverName.replace(/1080p|720p|480p|360p|240p|1080|720|480|360|240/gi, '').trim();
+                                                        if (sName === "" || sName.includes('جودة') || sName.includes('FHD') || sName.includes('HD') || sName.includes('SD')) {
+                                                            sName = "سيرفر " + (i+1);
                                                         }
+                                                        serverNames.push(sName);
                                                     }
                                                 }
                                             }
