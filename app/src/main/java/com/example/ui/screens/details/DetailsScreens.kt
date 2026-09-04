@@ -26,6 +26,7 @@ import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 
 import androidx.compose.runtime.*
+import com.example.ui.screens.player.ServerSelectionDialog
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -57,7 +58,7 @@ fun MovieDetailsScreen(
     onPersonClick: (String) -> Unit = {},
     movieId: String, 
     onBack: () -> Unit,
-    onPlay: (String, String) -> Unit,
+    onPlay: (String, String, String?, String?) -> Unit,
     viewModel: MovieDetailsViewModel = viewModel(factory = ViewModelFactory())
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -192,9 +193,9 @@ fun MovieDetailsScreen(
                     Button(
                         onClick = { 
                             if (downloadItem?.isCompleted == true) {
-                                onPlay(movie.title, "local_offline_file://${downloadItem.id}")
+                                onPlay(movie.title, "local_offline_file://${downloadItem.id}", null, null)
                             } else {
-                                onPlay(movie.title, "") 
+                                onPlay(movie.title, "", null, null) 
                             }
                         },
                         modifier = Modifier.weight(1f).height(50.dp),
@@ -273,18 +274,18 @@ fun MovieDetailsScreen(
 
             }
             if (showSourceSheet) {
-                SourceSelectionSheet(
-                    mediaId = movie.id,
+                ServerSelectionDialog(
+                    title = movie.title,
                     isMovie = true,
                     onDismiss = { showSourceSheet = false },
-                    onSourceSelected = { source ->
+                    onPlay = { url, serverName, website ->
                         showSourceSheet = false
                         if (isDownloadMode) {
                             scope.launch {
-                                downloadRepository.addToDownloads(DownloadItem(
-                                    id = movie.id, title = movie.title, posterUrl = movie.posterUrl, isMovie = true, quality = source.quality
+                                downloadRepository.addToDownloads(com.example.data.model.DownloadItem(
+                                    id = movie.id, title = movie.title, posterUrl = movie.posterUrl, isMovie = true, quality = serverName
                                 ))
-                                com.example.utils.AndroidDownloader.downloadVideo(ctx, source.url, "${movie.title} - ${source.quality}")
+                                com.example.utils.AndroidDownloader.downloadVideo(context, url, "${movie.title} - $serverName")
                             }
                         } else {
                             scope.launch {
@@ -296,7 +297,7 @@ fun MovieDetailsScreen(
                                         isMovie = true
                                     )
                                 )
-                                onPlay(movie.title, source.url)
+                                onPlay(movie.title, url, serverName, website)
                             }
                         }
                     }
@@ -322,7 +323,7 @@ fun SeriesDetailsScreen(
     onPersonClick: (String) -> Unit = {},
     seriesId: String,
     onBack: () -> Unit,
-    onPlay: (String, String) -> Unit
+    onPlay: (String, String, String?, String?) -> Unit
 ) {
     val context = LocalContext.current
     val viewModel: SeriesDetailsViewModel = viewModel(factory = ViewModelFactory())
@@ -534,41 +535,39 @@ fun SeriesDetailsScreen(
             }
             
             if (selectedEpisodeForSource != null) {
-                SourceSelectionSheet(
-                    mediaId = series.id,
-                    mediaTitle = "${series.title} S${uiState.selectedSeason?.seasonNumber}E${selectedEpisodeForSource?.episodeNumber}",
+                ServerSelectionDialog(
+                    title = series.title,
                     isMovie = false,
-                    episodeId = selectedEpisodeForSource?.id,
+                    season = uiState.selectedSeason?.seasonNumber ?: 1,
+                    episode = selectedEpisodeForSource?.episodeNumber ?: 1,
+                    isAnime = series.genres.any { it.contains("Anime", ignoreCase = true) },
                     onDismiss = { selectedEpisodeForSource = null },
-                    onSourceSelected = { source ->
+                    onPlay = { url, serverName, website ->
                         val ep = selectedEpisodeForSource!!
                         selectedEpisodeForSource = null
                         if (isDownloadMode) {
                             scope.launch {
                                 val fullTitle = "${series.title} - S${uiState.selectedSeason?.seasonNumber}E${ep.episodeNumber}"
-                                downloadRepository.addToDownloads(DownloadItem(
-                                    id = ep.id, title = fullTitle, posterUrl = ep.thumbnailUrl, isMovie = false, quality = source.quality
+                                downloadRepository.addToDownloads(com.example.data.model.DownloadItem(
+                                    id = ep.id, title = fullTitle, posterUrl = ep.thumbnailUrl, isMovie = false, quality = serverName
                                 ))
-                                com.example.utils.AndroidDownloader.downloadVideo(context, source.url, "$fullTitle - ${source.quality}")
+                                com.example.utils.AndroidDownloader.downloadVideo(context, url, "$fullTitle - $serverName")
                             }
                         } else {
                             scope.launch {
+                                val fullTitle = "${series.title} - S${uiState.selectedSeason?.seasonNumber}E${ep.episodeNumber}"
                                 historyRepository.addToHistory(
                                     com.example.data.model.HistoryItem(
-                                        id = series.id,
-                                        title = series.title,
-                                        posterUrl = series.posterUrl,
-                                        isMovie = false
+                                        id = ep.id, title = fullTitle, posterUrl = ep.thumbnailUrl, isMovie = false
                                     )
                                 )
-                                watchedRepo.markAsWatched(ep.id)
-                                onPlay("${series.title} - ${ep.title}", source.url)
+                                onPlay(fullTitle, url, serverName, website)
                             }
                         }
                     }
                 )
             }
-            
+
             if (showBatchDownloadSheet) {
                 com.example.ui.components.BatchDownloadSheet(
                     series = series,

@@ -44,6 +44,15 @@ fun BackgroundWebView(
 
     var currentIndex by remember { mutableStateOf(0) }
     val currentUrl = if (currentIndex < urls.size) urls[currentIndex] else null
+
+    LaunchedEffect(currentUrl) {
+        if (currentUrl != null) {
+            delay(20000) // 20 seconds maximum per URL
+            onSiteVerified(currentUrl) // Skip it so we don't get stuck forever
+            currentIndex++
+        }
+    }
+
     
     // We will use a state to force reload if needed
     var reloadTrigger by remember { mutableStateOf(0) }

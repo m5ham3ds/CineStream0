@@ -49,11 +49,11 @@ import com.example.ui.components.DownloadQualitySheet
 @OptIn(androidx.media3.common.util.UnstableApi::class, androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
 @Suppress("OPT_IN_USAGE")
-fun PlayerScreen(mediaId: String, isMovie: Boolean, title: String, url: String? = null, onBack: () -> Unit, viewModel: PlayerViewModel = viewModel()) {
+fun PlayerScreen(mediaId: String, isMovie: Boolean, title: String, url: String? = null, targetServer: String? = null, website: String? = null, onBack: () -> Unit, viewModel: PlayerViewModel = viewModel()) {
     val uiState by viewModel.uiState.collectAsState()
     
     LaunchedEffect(mediaId) {
-        viewModel.initialize(mediaId, isMovie, title, url)
+        viewModel.initialize(mediaId, isMovie, title, url, targetServer, website)
     }
 
     val context = LocalContext.current
@@ -203,7 +203,7 @@ fun PlayerScreen(mediaId: String, isMovie: Boolean, title: String, url: String? 
                     isMovie = uiState.isMovie,
                     season = uiState.currentSeasonNumber,
                     episode = uiState.currentEpisodeNumber,
-                    targetServer = uiState.currentServer,
+                    targetServer = uiState.currentServer ?: targetServer,
                     onVideoUrlFound = { extractedUrl ->
                         viewModel.setExtractedUrl(extractedUrl)
                     },
