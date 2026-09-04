@@ -350,13 +350,14 @@ fun PlayerScreen(mediaId: String, isMovie: Boolean, title: String, url: String? 
                         }
                     }
 
+
+
+
                     // Left Vertical Slider (Brightness)
                     Box(modifier = Modifier.align(Alignment.CenterStart).padding(start = 24.dp)) {
                         VerticalSlider(
                             value = brightness, 
-                            onValueChange = { brightness = it }, 
-                            topIcon = Icons.Default.BrightnessMedium,
-                            bottomIcon = Icons.Default.PictureInPictureAlt
+                            onValueChange = { brightness = it }
                         )
                     }
 
@@ -364,12 +365,10 @@ fun PlayerScreen(mediaId: String, isMovie: Boolean, title: String, url: String? 
                     Box(modifier = Modifier.align(Alignment.CenterEnd).padding(end = 24.dp)) {
                         VerticalSlider(
                             value = volume, 
-                            onValueChange = { volume = it }, 
-                            topIcon = Icons.AutoMirrored.Filled.VolumeUp,
-                            bottomIcon = Icons.Default.Fullscreen
+                            onValueChange = { volume = it }
                         )
                     }
-
+                    
                     // Center Playback Controls
                     if (uiState.currentVideoUrl == null) {
                         Column(
@@ -668,13 +667,9 @@ fun PlayerScreen(mediaId: String, isMovie: Boolean, title: String, url: String? 
 @Composable
 fun VerticalSlider(
     value: Float,
-    onValueChange: (Float) -> Unit,
-    topIcon: ImageVector,
-    bottomIcon: ImageVector
+    onValueChange: (Float) -> Unit
 ) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Icon(topIcon, contentDescription = null, tint = Color.White, modifier = Modifier.size(28.dp))
-        Spacer(modifier = Modifier.height(16.dp))
         
         Canvas(
             modifier = Modifier
@@ -725,8 +720,6 @@ fun VerticalSlider(
             )
         }
         
-        Spacer(modifier = Modifier.height(16.dp))
-        Icon(bottomIcon, contentDescription = null, tint = Color.White, modifier = Modifier.size(28.dp))
     }
 }
 
