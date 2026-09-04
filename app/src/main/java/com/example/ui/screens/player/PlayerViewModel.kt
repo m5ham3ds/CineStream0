@@ -59,7 +59,7 @@ class PlayerViewModel : ViewModel() {
         val fallbackList = when {
             isAnime -> listOf("WitAnime", "Anime4up", "AnimeBlkom") + allAnimeSites.filter { it !in listOf("WitAnime", "Anime4up", "AnimeBlkom") }
             isMovie -> listOf("EgyDead TV10", "QFilm", "TopCinema") + allMovieSeriesSites.filter { it !in listOf("EgyDead TV10", "QFilm", "TopCinema") }
-            else -> listOf("TopCinema", "EgyDead TV10", "Almeshkah", "Laaroza") + allMovieSeriesSites.filter { it !in listOf("TopCinema", "EgyDead TV10", "Almeshkah", "Laaroza") }
+            else -> listOf("TopCinema", "EgyDead TV10", "Egy Best", "ArabSeed Wine") + allMovieSeriesSites.filter { it !in listOf("TopCinema", "EgyDead TV10", "Egy Best", "ArabSeed Wine") }
         }
         
         val availableList = if (isAnime) allAnimeSites else allMovieSeriesSites
